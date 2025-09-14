@@ -1,24 +1,52 @@
 import { useEffect, useState, useCallback } from 'react';
-import { AdminAPI } from '../api';
+import { useNavigate } from 'react-router-dom';
+import { AdminAPI, StaffAPI, SubscriptionAPI, MaintenanceAPI } from '../api';
 import { PropertiesAPI } from '../api';
 
 const AdminDashboard = () => {
+  const navigate = useNavigate();
   const [pendingProperties, setPendingProperties] = useState([]);
   const [approvedProperties, setApprovedProperties] = useState([]);
+  const [staff, setStaff] = useState([]);
+  const [subscriptions, setSubscriptions] = useState([]);
+  const [maintenance, setMaintenance] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [activeTab, setActiveTab] = useState('pending');
+  const [showStaffForm, setShowStaffForm] = useState(false);
+  const [newStaff, setNewStaff] = useState({
+    name: '',
+    email: '',
+    password: '',
+    phone: '',
+    specialization: ''
+  });
   const token = localStorage.getItem('token');
+
+  // Authentication check
+  useEffect(() => {
+    const userData = JSON.parse(localStorage.getItem('user') || '{}');
+    if (!token || userData.role !== 'admin') {
+      navigate('/admin/login');
+      return;
+    }
+  }, [navigate, token]);
 
   const loadData = useCallback(async () => {
     try {
       setLoading(true);
-      const [pending, approved] = await Promise.all([
+      const [pending, approved, staffData, subscriptionsData, maintenanceData] = await Promise.all([
         AdminAPI.listPending(token),
-        PropertiesAPI.listApproved()
+        PropertiesAPI.listApproved(),
+        StaffAPI.getAll(token),
+        SubscriptionAPI.getMySubscriptions(token), // This will get all subscriptions for admin
+        MaintenanceAPI.getAll({}, token)
       ]);
       setPendingProperties(pending);
       setApprovedProperties(approved);
+      setStaff(staffData);
+      setSubscriptions(subscriptionsData);
+      setMaintenance(maintenanceData);
     } catch (e) {
       setError(e.message);
     } finally {
@@ -56,15 +84,32 @@ const AdminDashboard = () => {
   if (!token) return <div className="error">Login as admin first.</div>;
   if (error) return <div className="error">Error: {error}</div>;
 
+  const handleCreateStaff = async (e) => {
+    e.preventDefault();
+    try {
+      await StaffAPI.create(newStaff, token);
+      setNewStaff({ name: '', email: '', password: '', phone: '', specialization: '' });
+      setShowStaffForm(false);
+      loadData(); // Refresh data
+    } catch (error) {
+      alert(error.message);
+    }
+  };
+
   const getStats = () => {
     const totalProperties = pendingProperties.length + approvedProperties.length;
     const approvalRate = totalProperties > 0 ? Math.round((approvedProperties.length / totalProperties) * 100) : 0;
+    const activeSubscriptions = subscriptions.filter(sub => sub.status === 'active').length;
+    const pendingMaintenance = maintenance.filter(m => m.status === 'pending').length;
     
     return {
       total: totalProperties,
       pending: pendingProperties.length,
       approved: approvedProperties.length,
-      approvalRate
+      approvalRate,
+      staff: staff.length,
+      subscriptions: activeSubscriptions,
+      maintenance: pendingMaintenance
     };
   };
 
@@ -119,11 +164,31 @@ const AdminDashboard = () => {
         
         <div className="stat-card rate">
           <div className="stat-icon">
-            <i className="fas fa-percentage"></i>
+            <i className="fas fa-users"></i>
           </div>
           <div className="stat-content">
-            <h3>{stats.approvalRate}%</h3>
-            <p>Approval Rate</p>
+            <h3>{stats.staff}</h3>
+            <p>Staff Members</p>
+          </div>
+        </div>
+
+        <div className="stat-card total">
+          <div className="stat-icon">
+            <i className="fas fa-credit-card"></i>
+          </div>
+          <div className="stat-content">
+            <h3>{stats.subscriptions}</h3>
+            <p>Active Subscriptions</p>
+          </div>
+        </div>
+
+        <div className="stat-card pending">
+          <div className="stat-icon">
+            <i className="fas fa-tools"></i>
+          </div>
+          <div className="stat-content">
+            <h3>{stats.maintenance}</h3>
+            <p>Pending Maintenance</p>
           </div>
         </div>
       </div>
@@ -145,6 +210,30 @@ const AdminDashboard = () => {
           <i className="fas fa-check-circle"></i>
           <span className="tab-text">Approved Properties</span>
           <span className="tab-count">{approvedProperties.length}</span>
+        </button>
+        <button 
+          className={`tab-btn ${activeTab === 'staff' ? 'active' : ''}`}
+          onClick={() => setActiveTab('staff')}
+        >
+          <i className="fas fa-users"></i>
+          <span className="tab-text">Staff Management</span>
+          <span className="tab-count">{staff.length}</span>
+        </button>
+        <button 
+          className={`tab-btn ${activeTab === 'subscriptions' ? 'active' : ''}`}
+          onClick={() => setActiveTab('subscriptions')}
+        >
+          <i className="fas fa-credit-card"></i>
+          <span className="tab-text">Subscriptions</span>
+          <span className="tab-count">{subscriptions.length}</span>
+        </button>
+        <button 
+          className={`tab-btn ${activeTab === 'maintenance' ? 'active' : ''}`}
+          onClick={() => setActiveTab('maintenance')}
+        >
+          <i className="fas fa-tools"></i>
+          <span className="tab-text">Maintenance</span>
+          <span className="tab-count">{maintenance.length}</span>
         </button>
       </div>
 
@@ -322,6 +411,236 @@ const AdminDashboard = () => {
                     ))}
                   </div>
                 )}
+              </div>
+            )}
+
+            {activeTab === 'staff' && (
+              <div className="staff-section">
+                <div className="section-header">
+                  <h2>
+                    <i className="fas fa-users"></i>
+                    Staff Management
+                  </h2>
+                  <p>Manage staff members and their assignments</p>
+                  <button 
+                    className="cta-btn primary"
+                    onClick={() => setShowStaffForm(!showStaffForm)}
+                  >
+                    <i className="fas fa-plus"></i>
+                    Add New Staff
+                  </button>
+                </div>
+
+                {showStaffForm && (
+                  <div className="form-section">
+                    <h3>Create New Staff Member</h3>
+                    <form onSubmit={handleCreateStaff}>
+                      <div className="input-group">
+                        <label>Name</label>
+                        <input
+                          type="text"
+                          value={newStaff.name}
+                          onChange={(e) => setNewStaff({...newStaff, name: e.target.value})}
+                          required
+                        />
+                      </div>
+                      <div className="input-group">
+                        <label>Email</label>
+                        <input
+                          type="email"
+                          value={newStaff.email}
+                          onChange={(e) => setNewStaff({...newStaff, email: e.target.value})}
+                          required
+                        />
+                      </div>
+                      <div className="input-group">
+                        <label>Password</label>
+                        <input
+                          type="password"
+                          value={newStaff.password}
+                          onChange={(e) => setNewStaff({...newStaff, password: e.target.value})}
+                          required
+                        />
+                      </div>
+                      <div className="input-group">
+                        <label>Phone</label>
+                        <input
+                          type="tel"
+                          value={newStaff.phone}
+                          onChange={(e) => setNewStaff({...newStaff, phone: e.target.value})}
+                        />
+                      </div>
+                      <div className="input-group">
+                        <label>Specialization</label>
+                        <select
+                          value={newStaff.specialization}
+                          onChange={(e) => setNewStaff({...newStaff, specialization: e.target.value})}
+                        >
+                          <option value="">Select specialization</option>
+                          <option value="maintenance">Maintenance</option>
+                          <option value="inspection">Inspection</option>
+                          <option value="cleaning">Cleaning</option>
+                          <option value="general">General</option>
+                        </select>
+                      </div>
+                      <div className="form-actions">
+                        <button type="submit" className="cta-btn primary">
+                          <i className="fas fa-plus"></i>
+                          Create Staff
+                        </button>
+                        <button 
+                          type="button" 
+                          className="cta-btn secondary"
+                          onClick={() => setShowStaffForm(false)}
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    </form>
+                  </div>
+                )}
+
+                <div className="admin-properties">
+                  {staff.map(member => (
+                    <div key={member._id} className="admin-property-card">
+                      <div className="property-details">
+                        <h4>{member.name}</h4>
+                        <div className="property-meta">
+                          <div className="meta-item">
+                            <i className="fas fa-envelope"></i>
+                            <span>{member.email}</span>
+                          </div>
+                          <div className="meta-item">
+                            <i className="fas fa-phone"></i>
+                            <span>{member.phone || 'Not provided'}</span>
+                          </div>
+                          <div className="meta-item">
+                            <i className="fas fa-tag"></i>
+                            <span>{member.specialization || 'General'}</span>
+                          </div>
+                        </div>
+                        <div className="property-status">
+                          <span className={`${member.availability}-badge`}>
+                            <i className="fas fa-circle"></i>
+                            {member.availability}
+                          </span>
+                        </div>
+                      </div>
+                      <div className="admin-actions">
+                        <button className="action-btn view-btn">
+                          <i className="fas fa-eye"></i>
+                          View Details
+                        </button>
+                        <button className="action-btn remove-btn">
+                          <i className="fas fa-trash"></i>
+                          Remove
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {activeTab === 'subscriptions' && (
+              <div className="subscriptions-section">
+                <div className="section-header">
+                  <h2>
+                    <i className="fas fa-credit-card"></i>
+                    Active Subscriptions
+                  </h2>
+                  <p>Monitor property subscriptions and payments</p>
+                </div>
+
+                <div className="admin-properties">
+                  {subscriptions.map(subscription => (
+                    <div key={subscription._id} className="admin-property-card">
+                      <div className="property-details">
+                        <h4>{subscription.property.title}</h4>
+                        <div className="property-meta">
+                          <div className="meta-item">
+                            <i className="fas fa-tag"></i>
+                            <span>{subscription.planType.toUpperCase()} Plan</span>
+                          </div>
+                          <div className="meta-item">
+                            <i className="fas fa-dollar-sign"></i>
+                            <span>₹{subscription.amount}/month</span>
+                          </div>
+                          <div className="meta-item">
+                            <i className="fas fa-calendar"></i>
+                            <span>Expires: {new Date(subscription.endDate).toLocaleDateString()}</span>
+                          </div>
+                        </div>
+                        <div className="property-status">
+                          <span className={`${subscription.status}-badge`}>
+                            <i className="fas fa-circle"></i>
+                            {subscription.status}
+                          </span>
+                        </div>
+                      </div>
+                      <div className="admin-actions">
+                        <button className="action-btn view-btn">
+                          <i className="fas fa-eye"></i>
+                          View Details
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {activeTab === 'maintenance' && (
+              <div className="maintenance-section">
+                <div className="section-header">
+                  <h2>
+                    <i className="fas fa-tools"></i>
+                    Maintenance Requests
+                  </h2>
+                  <p>Track and manage property maintenance requests</p>
+                </div>
+
+                <div className="admin-properties">
+                  {maintenance.map(request => (
+                    <div key={request._id} className="admin-property-card">
+                      <div className="property-details">
+                        <h4>{request.title}</h4>
+                        <div className="property-meta">
+                          <div className="meta-item">
+                            <i className="fas fa-building"></i>
+                            <span>{request.property.title}</span>
+                          </div>
+                          <div className="meta-item">
+                            <i className="fas fa-tag"></i>
+                            <span>{request.type}</span>
+                          </div>
+                          <div className="meta-item">
+                            <i className="fas fa-exclamation-triangle"></i>
+                            <span>{request.priority}</span>
+                          </div>
+                        </div>
+                        <div className="property-status">
+                          <span className={`${request.status}-badge`}>
+                            <i className="fas fa-circle"></i>
+                            {request.status}
+                          </span>
+                        </div>
+                      </div>
+                      <div className="admin-actions">
+                        <button className="action-btn view-btn">
+                          <i className="fas fa-eye"></i>
+                          View Details
+                        </button>
+                        {request.status === 'pending' && (
+                          <button className="action-btn approve-btn">
+                            <i className="fas fa-user-plus"></i>
+                            Assign Staff
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
             )}
           </>

@@ -31,9 +31,9 @@ const Home = () => {
             Discover amazing properties in prime locations with competitive prices
           </p>
           <div className="hero-actions">
-            <Link to="/" className="hero-btn primary">
+            <Link to="/search" className="hero-btn primary">
               <i className="fas fa-search"></i>
-              Browse Properties
+              Search Properties
             </Link>
             <Link to="/register-property" className="hero-btn secondary">
               <i className="fas fa-plus"></i>
@@ -56,6 +56,10 @@ const Home = () => {
             <p className="section-subtitle">
               Discover our latest approved properties available for rent
             </p>
+            <Link to="/search" className="cta-btn primary" style={{ marginTop: '1rem' }}>
+              <i className="fas fa-search"></i>
+              View All Properties
+            </Link>
           </div>
           
           {properties.length > 0 ? (

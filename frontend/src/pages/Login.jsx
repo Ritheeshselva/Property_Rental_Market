@@ -7,6 +7,9 @@ const Login = () => {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [role, setRole] = useState('user');
+  const [phone, setPhone] = useState('');
+  const [address, setAddress] = useState('');
   const [msg, setMsg] = useState('');
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
@@ -18,11 +21,14 @@ const Login = () => {
     
     try {
       if (isSignup) {
-        await AuthAPI.signup(name, email, password);
+        await AuthAPI.signup(name, email, password, role, phone, address);
         setMsg('Account created successfully! Now login.');
         setIsSignup(false);
         setName('');
         setPassword('');
+        setPhone('');
+        setAddress('');
+        setRole('user');
         setLoading(false);
       } else {
         const data = await AuthAPI.login(email, password);
@@ -35,15 +41,29 @@ const Login = () => {
         }
         
         localStorage.setItem('token', data.token);
-        localStorage.setItem('role', data.role);
-        localStorage.setItem('userName', data.name);
-        localStorage.setItem('userEmail', data.email);
+        localStorage.setItem('user', JSON.stringify({
+          id: data.id,
+          name: data.name,
+          email: data.email,
+          role: data.role,
+          phone: data.phone,
+          address: data.address,
+          subscriptionStatus: data.subscriptionStatus,
+          staffId: data.staffId,
+          specialization: data.specialization
+        }));
         
         setMsg('Login successful! Redirecting...');
         
-        // Redirect to home page after successful login
+        // Redirect based on role
         setTimeout(() => {
-          navigate('/');
+          if (data.role === 'owner') {
+            navigate('/owner-dashboard');
+          } else if (data.role === 'staff') {
+            navigate('/staff-dashboard');
+          } else {
+            navigate('/');
+          }
         }, 1000);
       }
     } catch (e) {
@@ -63,20 +83,66 @@ const Login = () => {
         
         <form className="form user-form" onSubmit={onSubmit}>
           {isSignup && (
-            <div className="input-group">
-              <label htmlFor="name">
-                <i className="fas fa-user"></i> Full Name
-              </label>
-              <input 
-                id="name"
-                name="name" 
-                type="text" 
-                placeholder="Enter your full name" 
-                value={name} 
-                onChange={(e) => setName(e.target.value)} 
-                required 
-              />
-            </div>
+            <>
+              <div className="input-group">
+                <label htmlFor="name">
+                  <i className="fas fa-user"></i> Full Name
+                </label>
+                <input 
+                  id="name"
+                  name="name" 
+                  type="text" 
+                  placeholder="Enter your full name" 
+                  value={name} 
+                  onChange={(e) => setName(e.target.value)} 
+                  required 
+                />
+              </div>
+
+              <div className="input-group">
+                <label htmlFor="role">
+                  <i className="fas fa-user-tag"></i> Account Type
+                </label>
+                <select
+                  id="role"
+                  name="role"
+                  value={role}
+                  onChange={(e) => setRole(e.target.value)}
+                  required
+                >
+                  <option value="user">Regular User</option>
+                  <option value="owner">Property Owner</option>
+                </select>
+              </div>
+
+              <div className="input-group">
+                <label htmlFor="phone">
+                  <i className="fas fa-phone"></i> Phone Number
+                </label>
+                <input 
+                  id="phone"
+                  name="phone" 
+                  type="tel" 
+                  placeholder="Enter your phone number" 
+                  value={phone} 
+                  onChange={(e) => setPhone(e.target.value)} 
+                />
+              </div>
+
+              <div className="input-group">
+                <label htmlFor="address">
+                  <i className="fas fa-map-marker-alt"></i> Address
+                </label>
+                <input 
+                  id="address"
+                  name="address" 
+                  type="text" 
+                  placeholder="Enter your address" 
+                  value={address} 
+                  onChange={(e) => setAddress(e.target.value)} 
+                />
+              </div>
+            </>
           )}
           
           <div className="input-group">
@@ -134,6 +200,9 @@ const Login = () => {
                 setName('');
                 setEmail('');
                 setPassword('');
+                setPhone('');
+                setAddress('');
+                setRole('user');
               }}
               className="switch-mode-btn"
             >

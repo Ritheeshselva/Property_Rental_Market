@@ -13,23 +13,19 @@ const Navbar = () => {
   useEffect(() => {
     // Check authentication status on component mount
     const token = localStorage.getItem('token');
-    const role = localStorage.getItem('role');
-    const name = localStorage.getItem('userName');
-    const email = localStorage.getItem('userEmail');
+    const user = JSON.parse(localStorage.getItem('user') || '{}');
     
     setUserData({
       isLoggedIn: !!token,
-      role,
-      name,
-      email
+      role: user.role,
+      name: user.name,
+      email: user.email
     });
   }, []);
 
   const handleLogout = () => {
     localStorage.removeItem('token');
-    localStorage.removeItem('role');
-    localStorage.removeItem('userName');
-    localStorage.removeItem('userEmail');
+    localStorage.removeItem('user');
     setUserData({
       isLoggedIn: false,
       role: null,
@@ -59,9 +55,9 @@ const Navbar = () => {
       </div>
 
       <div className="navbar-menu">
-        <Link to="/" className="nav-link">
+        <Link to="/search" className="nav-link">
           <i className="fas fa-search"></i>
-          Browse Properties
+          Search Properties
         </Link>
         
         {userData.isLoggedIn && (
@@ -71,10 +67,24 @@ const Navbar = () => {
           </button>
         )}
 
+        {userData.role === 'owner' && (
+          <Link to="/owner-dashboard" className="nav-link admin-link">
+            <i className="fas fa-home"></i>
+            Owner Dashboard
+          </Link>
+        )}
+
         {userData.role === 'admin' && (
           <Link to="/admin/dashboard" className="nav-link admin-link">
             <i className="fas fa-shield-alt"></i>
             Admin Dashboard
+          </Link>
+        )}
+
+        {userData.role === 'staff' && (
+          <Link to="/staff-dashboard" className="nav-link admin-link">
+            <i className="fas fa-tools"></i>
+            Staff Dashboard
           </Link>
         )}
       </div>
@@ -92,6 +102,14 @@ const Navbar = () => {
                   {userData.role === 'admin' ? (
                     <span className="admin-badge">
                       <i className="fas fa-crown"></i> Admin
+                    </span>
+                  ) : userData.role === 'owner' ? (
+                    <span className="admin-badge">
+                      <i className="fas fa-home"></i> Owner
+                    </span>
+                  ) : userData.role === 'staff' ? (
+                    <span className="admin-badge">
+                      <i className="fas fa-tools"></i> Staff
                     </span>
                   ) : (
                     <span className="user-badge">

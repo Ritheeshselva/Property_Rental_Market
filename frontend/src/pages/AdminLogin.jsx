@@ -24,11 +24,19 @@ const AdminLogin = () => {
         return;
       }
       
-      // Store admin data
+      // Store admin data consistently with regular login
       localStorage.setItem('token', data.token);
-      localStorage.setItem('role', data.role);
-      localStorage.setItem('userName', data.name);
-      localStorage.setItem('userEmail', data.email);
+      localStorage.setItem('user', JSON.stringify({
+        id: data.id,
+        name: data.name,
+        email: data.email,
+        role: data.role,
+        phone: data.phone,
+        address: data.address,
+        subscriptionStatus: data.subscriptionStatus,
+        staffId: data.staffId,
+        specialization: data.specialization
+      }));
       
       setMsg('Admin login successful! Redirecting...');
       

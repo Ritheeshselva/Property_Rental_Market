@@ -1,3 +1,10 @@
+export const StaffReportAPI = {
+  submitReport: (assignmentId, reportText, token) => apiRequest(`/api/staff/assignments/${assignmentId}/report`, { method: 'POST', token, body: { reportText } }),
+  getReportsForStaff: (staffId, token) => apiRequest(`/api/staff/${staffId}/reports`, { token }),
+  getAllReports: (token) => apiRequest('/api/staff/reports', { token }),
+  verifyReport: (reportId, token) => apiRequest(`/api/staff/reports/${reportId}/verify`, { method: 'PUT', token }),
+  forwardReport: (reportId, token) => apiRequest(`/api/staff/reports/${reportId}/forward`, { method: 'PUT', token })
+};
 const API_BASE = process.env.REACT_APP_API_BASE || 'http://localhost:5000';
 
 export async function apiRequest(path, { method = 'GET', headers = {}, body, token, isForm = false } = {}) {

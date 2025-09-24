@@ -77,6 +77,19 @@ router.post('/:id/reject', auth('admin'), async (req, res) => {
     res.status(500).json({ message: e.message });
   }
 });
+// Assign property to admin (self-assign)
+router.post('/:id/assign-to-admin', auth('admin'), async (req, res) => {
+  try {
+    const property = await Property.findById(req.params.id);
+    if (!property) return res.status(404).json({ message: 'Property not found' });
+    // Assign the property to the current admin
+    property.owner = req.user.id;
+    await property.save();
+    res.json({ message: 'Property assigned to admin', property });
+  } catch (e) {
+    res.status(500).json({ message: e.message });
+  }
+});
 
 module.exports = router;
 

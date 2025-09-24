@@ -6,6 +6,7 @@ import PropertyDetails from "./pages/PropertyDetails";
 import Login from "./pages/Login";
 import RegisterProperty from "./pages/RegisterProperty";
 import AdminLogin from "./pages/AdminLogin";
+import StaffLogin from "./pages/StaffLogin";
 import AdminDashboard from "./pages/AdminDashboard";
 import OwnerDashboard from "./pages/OwnerDashboard";
 import StaffDashboard from "./pages/StaffDashboard";
@@ -32,6 +33,7 @@ function App() {
             <Route path="/staff-dashboard" element={<StaffDashboard />} />
             <Route path="/subscription/:propertyId" element={<SubscriptionPage />} />
             <Route path="/maintenance/create" element={<MaintenanceRequest />} />
+            <Route path="/staff-login" element={<StaffLogin />} />
           </Routes>
         </main>
         <Footer />

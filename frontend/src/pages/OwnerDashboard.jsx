@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { PropertiesAPI, SubscriptionAPI, MaintenanceAPI } from "../api";
+import { PropertiesAPI, SubscriptionAPI, MaintenanceAPI, StaffReportAPI } from "../api";
 
 const OwnerDashboard = () => {
   const navigate = useNavigate();
@@ -9,6 +9,8 @@ const OwnerDashboard = () => {
   const [subscriptions, setSubscriptions] = useState([]);
   const [maintenance, setMaintenance] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [forwardedReports, setForwardedReports] = useState([]);
+  const [reportLoading, setReportLoading] = useState(false);
   const [user, setUser] = useState(null);
 
   useEffect(() => {
@@ -41,6 +43,14 @@ const OwnerDashboard = () => {
       setProperties(userProperties);
       setSubscriptions(subscriptionsRes);
       setMaintenance(maintenanceRes);
+      // Fetch forwarded staff reports for owner's properties
+      setReportLoading(true);
+      try {
+        const allReports = await StaffReportAPI.getAllReports(token);
+        const ownerReports = allReports.filter(r => r.status === 'forwarded' && r.property && r.property.owner && r.property.owner._id === user?.id);
+        setForwardedReports(ownerReports);
+      } catch {}
+      setReportLoading(false);
     } catch (error) {
       console.error('Error loading dashboard data:', error);
     } finally {
@@ -140,6 +150,14 @@ const OwnerDashboard = () => {
       {/* Tabs */}
       <div className="admin-tabs">
         <button 
+          className={`tab-btn ${activeTab === 'reports' ? 'active' : ''}`}
+          onClick={() => setActiveTab('reports')}
+        >
+          <i className="fas fa-file-alt"></i>
+          <span className="tab-text">Staff Reports</span>
+          <span className="tab-count">{forwardedReports.length}</span>
+        </button>
+        <button 
           className={`tab-btn ${activeTab === 'overview' ? 'active' : ''}`}
           onClick={() => setActiveTab('overview')}
         >
@@ -174,6 +192,58 @@ const OwnerDashboard = () => {
 
       {/* Tab Content */}
       <div className="admin-content">
+        {activeTab === 'reports' && (
+          <div className="staff-reports-section">
+            <div className="section-header">
+              <h2>
+                <i className="fas fa-file-alt"></i>
+                Staff Inspection/Problem Reports
+              </h2>
+              <p>Reports forwarded by admin for your properties</p>
+            </div>
+            {reportLoading ? (
+              <div className="loading-container">
+                <div className="loading-spinner">
+                  <i className="fas fa-spinner fa-spin"></i>
+                </div>
+                <p>Loading staff reports...</p>
+              </div>
+            ) : forwardedReports.length === 0 ? (
+              <div className="empty-state">
+                <div className="empty-icon">
+                  <i className="fas fa-file-alt"></i>
+                </div>
+                <h3>No staff reports</h3>
+                <p>No inspection/problem reports have been forwarded by admin yet.</p>
+              </div>
+            ) : (
+              <div className="admin-properties">
+                {forwardedReports.map(report => (
+                  <div key={report._id} className="admin-property-card">
+                    <div className="property-details">
+                      <h4>Property: {report.property?.title || 'N/A'}</h4>
+                      <div className="property-meta">
+                        <span className="meta-item"><i className="fas fa-user"></i> Staff: {report.staff?.name || 'N/A'}</span>
+                        <span className="meta-item"><i className="fas fa-calendar"></i> Submitted: {new Date(report.submittedAt).toLocaleDateString()}</span>
+                        <span className="meta-item"><i className="fas fa-tasks"></i> Assignment: {report.assignment?.assignmentType || 'N/A'}</span>
+                      </div>
+                      <div className="property-status">
+                        <span className={`${report.status}-badge`}>
+                          <i className="fas fa-circle"></i>
+                          {report.status}
+                        </span>
+                      </div>
+                      <div className="report-content">
+                        <strong>Report:</strong>
+                        <p>{report.reportText}</p>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
         {activeTab === 'overview' && (
           <div className="section-header">
             <h2>Property Overview</h2>

@@ -1,11 +1,64 @@
+// Staff submits inspection/problem report for an assignment
+
 const express = require('express');
+const StaffReport = require('../models/StaffReport');
 const User = require('../models/User');
 const StaffAssignment = require('../models/StaffAssignment');
 const Property = require('../models/Property');
 const auth = require('../middleware/auth');
-
 const router = express.Router();
 
+// Staff submits inspection/problem report for an assignment
+router.post('/assignments/:assignmentId/report', auth('staff'), async (req, res) => {
+  try {
+    const { reportText } = req.body;
+    if (!reportText) {
+      return res.status(400).json({ message: 'Report text is required' });
+    }
+    const assignment = await StaffAssignment.findById(req.params.assignmentId);
+    if (!assignment) {
+      return res.status(404).json({ message: 'Assignment not found' });
+    }
+    if (assignment.staff.toString() !== req.user.id) {
+      return res.status(403).json({ message: 'Not authorized' });
+    }
+    const report = await StaffReport.create({
+      assignment: assignment._id,
+      staff: req.user.id,
+      property: assignment.property,
+      reportText
+    });
+    res.json(report);
+  } catch (e) {
+    res.status(500).json({ message: e.message });
+  }
+});
+
+
+// Get reports for a staff member
+router.get('/:staffId/reports', auth(), async (req, res) => {
+  try {
+    if (req.user.role !== 'admin' && req.user.id !== req.params.staffId) {
+      return res.status(403).json({ message: 'Not authorized' });
+    }
+    const reports = await StaffReport.find({ staff: req.params.staffId }).populate('assignment property');
+    res.json(reports);
+  } catch (e) {
+    res.status(500).json({ message: e.message });
+  }
+});
+
+// Get all staff reports (admin only)
+router.get('/reports', auth('admin'), async (req, res) => {
+  try {
+    const reports = await StaffReport.find()
+      .populate('assignment property staff', 'name email title address')
+      .sort({ createdAt: -1 });
+    res.json(reports);
+  } catch (e) {
+    res.status(500).json({ message: e.message });
+  }
+});
 // Get all staff (admin only)
 router.get('/', auth('admin'), async (req, res) => {
   try {
@@ -34,11 +87,14 @@ router.post('/', auth('admin'), async (req, res) => {
       return res.status(400).json({ message: 'User with this email already exists' });
     }
 
+
+
     const bcrypt = require('bcryptjs');
     const passwordHash = await bcrypt.hash(password, 10);
 
     // Generate staff ID
     const staffId = 'STF' + Date.now().toString().slice(-6);
+
 
     const staff = await User.create({
       name,
@@ -50,69 +106,7 @@ router.post('/', auth('admin'), async (req, res) => {
       staffId,
       availability: 'available'
     });
-
-    res.status(201).json({
-      id: staff._id,
-      name: staff.name,
-      email: staff.email,
-      staffId: staff.staffId,
-      specialization: staff.specialization
-    });
-  } catch (e) {
-    res.status(500).json({ message: e.message });
-  }
-});
-
-// Get staff member details
-router.get('/:id', auth(), async (req, res) => {
-  try {
-    const staff = await User.findById(req.params.id)
-      .select('-passwordHash')
-      .populate('assignedProperties', 'title address images');
-    
-    if (!staff || staff.role !== 'staff') {
-      return res.status(404).json({ message: 'Staff member not found' });
-    }
-
-    // Get recent assignments
-    const assignments = await StaffAssignment.find({ staff: req.params.id })
-      .populate('property', 'title address')
-      .populate('assignedBy', 'name')
-      .sort({ createdAt: -1 })
-      .limit(10);
-
-    res.json({
-      ...staff.toObject(),
-      recentAssignments: assignments
-    });
-  } catch (e) {
-    res.status(500).json({ message: e.message });
-  }
-});
-
-// Update staff member (admin only)
-router.put('/:id', auth('admin'), async (req, res) => {
-  try {
-    const { name, phone, specialization, availability } = req.body;
-    
-    const staff = await User.findById(req.params.id);
-    if (!staff || staff.role !== 'staff') {
-      return res.status(404).json({ message: 'Staff member not found' });
-    }
-
-    const updateData = {};
-    if (name) updateData.name = name;
-    if (phone) updateData.phone = phone;
-    if (specialization) updateData.specialization = specialization;
-    if (availability) updateData.availability = availability;
-
-    const updatedStaff = await User.findByIdAndUpdate(
-      req.params.id,
-      updateData,
-      { new: true }
-    ).select('-passwordHash');
-
-    res.json(updatedStaff);
+    res.status(201).json(staff);
   } catch (e) {
     res.status(500).json({ message: e.message });
   }

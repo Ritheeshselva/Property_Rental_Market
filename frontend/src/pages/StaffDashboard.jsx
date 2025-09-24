@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { MaintenanceAPI, StaffAPI } from "../api";
+import { MaintenanceAPI, StaffAPI, StaffReportAPI } from "../api";
 
 const StaffDashboard = () => {
   const navigate = useNavigate();
@@ -9,6 +9,9 @@ const StaffDashboard = () => {
   const [maintenance, setMaintenance] = useState([]);
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState(null);
+  const [tenantDetails, setTenantDetails] = useState({});
+  const [reportText, setReportText] = useState({});
+  const [reportSubmitting, setReportSubmitting] = useState({});
 
   useEffect(() => {
     const token = localStorage.getItem('token');
@@ -30,13 +33,44 @@ const StaffDashboard = () => {
         StaffAPI.getAssignments(user?.id, token),
         MaintenanceAPI.getStaffAssignments({}, token)
       ]);
-
       setAssignments(assignmentsRes);
       setMaintenance(maintenanceRes);
+
+      // Fetch tenant details for each assignment's property
+      const tenantMap = {};
+      for (const assignment of assignmentsRes) {
+        try {
+          const res = await fetch(`${process.env.REACT_APP_API_BASE || 'http://localhost:5000'}/api/properties/${assignment.property._id}/bookings`);
+          if (res.ok) {
+            const bookings = await res.json();
+            // Find the latest confirmed booking
+            const confirmed = bookings.find(b => b.status === 'confirmed');
+            if (confirmed) tenantMap[assignment._id] = confirmed;
+          }
+        } catch {}
+      }
+      setTenantDetails(tenantMap);
     } catch (error) {
       console.error('Error loading dashboard data:', error);
     } finally {
       setLoading(false);
+    }
+  };
+  const handleReportChange = (assignmentId, value) => {
+    setReportText(prev => ({ ...prev, [assignmentId]: value }));
+  };
+
+  const handleSubmitReport = async (assignmentId) => {
+    setReportSubmitting(prev => ({ ...prev, [assignmentId]: true }));
+    try {
+      const token = localStorage.getItem('token');
+      await StaffReportAPI.submitReport(assignmentId, reportText[assignmentId], token);
+      setReportText(prev => ({ ...prev, [assignmentId]: '' }));
+      alert('Report submitted successfully!');
+    } catch (e) {
+      alert('Failed to submit report: ' + e.message);
+    } finally {
+      setReportSubmitting(prev => ({ ...prev, [assignmentId]: false }));
     }
   };
 
@@ -215,6 +249,34 @@ const StaffDashboard = () => {
                           <i className="fas fa-circle"></i>
                           {assignment.status}
                         </span>
+                      </div>
+                      {/* Tenant details */}
+                      {tenantDetails[assignment._id] && (
+                        <div className="tenant-details">
+                          <h5>Tenant Details</h5>
+                          <p><strong>Name:</strong> {tenantDetails[assignment._id].name}</p>
+                          <p><strong>Email:</strong> {tenantDetails[assignment._id].email}</p>
+                          <p><strong>Phone:</strong> {tenantDetails[assignment._id].phone}</p>
+                          <p><strong>Start Date:</strong> {new Date(tenantDetails[assignment._id].startDate).toLocaleDateString()}</p>
+                        </div>
+                      )}
+                      {/* Report submission form */}
+                      <div className="report-section">
+                        <h5>Submit Inspection/Problem Report</h5>
+                        <textarea
+                          value={reportText[assignment._id] || ''}
+                          onChange={e => handleReportChange(assignment._id, e.target.value)}
+                          placeholder="Describe inspection result or any issues..."
+                          rows={3}
+                          style={{ width: '100%' }}
+                        />
+                        <button
+                          className="action-btn approve-btn"
+                          disabled={reportSubmitting[assignment._id] || !(reportText[assignment._id] && reportText[assignment._id].trim())}
+                          onClick={() => handleSubmitReport(assignment._id)}
+                        >
+                          {reportSubmitting[assignment._id] ? 'Submitting...' : 'Submit Report'}
+                        </button>
                       </div>
                     </div>
                     <div className="admin-actions">

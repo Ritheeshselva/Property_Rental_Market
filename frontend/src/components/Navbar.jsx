@@ -90,6 +90,13 @@ const Navbar = () => {
       </div>
 
       <div className="navbar-auth">
+        {/* Staff Login button for users who are not logged in as staff */}
+        {!userData.isLoggedIn && (
+          <Link to="/staff-login" className="nav-link staff-login-link">
+            <i className="fas fa-tools"></i>
+            Staff Login
+          </Link>
+        )}
         {userData.isLoggedIn ? (
           <div className="user-profile">
             <div className="user-info">

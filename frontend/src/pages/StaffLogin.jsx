@@ -22,6 +22,10 @@ const StaffLogin = () => {
       }
       localStorage.setItem('token', data.token);
       localStorage.setItem('user', JSON.stringify(data));
+      
+      // Trigger auth change event to update navbar
+      window.dispatchEvent(new Event('authChanged'));
+      
       setMsg('Staff login successful! Redirecting...');
       setTimeout(() => {
         navigate('/staff-dashboard');

@@ -38,6 +38,9 @@ const AdminLogin = () => {
         specialization: data.specialization
       }));
       
+      // Trigger auth change event to update navbar
+      window.dispatchEvent(new Event('authChanged'));
+      
       setMsg('Admin login successful! Redirecting...');
       
       // Redirect to admin dashboard

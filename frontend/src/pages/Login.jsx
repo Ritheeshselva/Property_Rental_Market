@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { AuthAPI } from '../api';
 import { useNavigate } from 'react-router-dom';
+import { login } from '../utils/auth';
 
 const Login = () => {
   const [isSignup, setIsSignup] = useState(false);
@@ -33,15 +34,10 @@ const Login = () => {
       } else {
         const data = await AuthAPI.login(email, password);
         
-        // Check if user is trying to login as admin
-        if (data.role === 'admin') {
-          setMsg('This is an admin account. Please use the admin login page.');
-          setLoading(false);
-          return;
-        }
+        console.log('Login successful, user data:', data); // Debug log
         
-        localStorage.setItem('token', data.token);
-        localStorage.setItem('user', JSON.stringify({
+        // Use the login utility function
+        login(data.token, {
           id: data.id,
           name: data.name,
           email: data.email,
@@ -51,13 +47,17 @@ const Login = () => {
           subscriptionStatus: data.subscriptionStatus,
           staffId: data.staffId,
           specialization: data.specialization
-        }));
+        });
+        
+        console.log('Auth change event triggered'); // Debug log
         
         setMsg('Login successful! Redirecting...');
         
         // Redirect based on role
         setTimeout(() => {
-          if (data.role === 'owner') {
+          if (data.role === 'admin') {
+            navigate('/admin/dashboard');
+          } else if (data.role === 'owner') {
             navigate('/owner-dashboard');
           } else if (data.role === 'staff') {
             navigate('/staff-dashboard');
@@ -77,8 +77,8 @@ const Login = () => {
       <div className="user-login-container">
         <div className="user-login-header">
           <i className="fas fa-user user-icon"></i>
-          <h2>{isSignup ? 'Create User Account' : 'User Login'}</h2>
-          <p>{isSignup ? 'Join our property rental community' : 'Access your account to browse and list properties'}</p>
+          <h2>{isSignup ? 'Create Account' : 'Login'}</h2>
+          <p>{isSignup ? 'Join our property rental community' : 'Access your account - all user types welcome'}</p>
         </div>
         
         <form className="form user-form" onSubmit={onSubmit}>
@@ -112,6 +112,7 @@ const Login = () => {
                 >
                   <option value="user">Regular User</option>
                   <option value="owner">Property Owner</option>
+                  <option value="staff">Staff Member</option>
                 </select>
               </div>
 
@@ -209,17 +210,6 @@ const Login = () => {
               {isSignup ? 'Login here' : 'Sign up here'}
             </button>
           </p>
-          
-          <div className="admin-link-section">
-            <p>Are you an administrator?</p>
-            <button 
-              onClick={() => navigate('/admin/login')}
-              className="admin-link-btn"
-            >
-              <i className="fas fa-shield-alt"></i>
-              Admin Login
-            </button>
-          </div>
         </div>
         
         {msg && (

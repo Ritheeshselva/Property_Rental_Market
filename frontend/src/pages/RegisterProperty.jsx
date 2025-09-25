@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { PropertiesAPI } from "../api";
+import { PropertiesAPI, SubscriptionAPI } from "../api";
 
 const RegisterProperty = () => {
   const navigate = useNavigate();
@@ -21,7 +21,12 @@ const RegisterProperty = () => {
   const [ownerContact, setOwnerContact] = useState("");
   const [ownerEmail, setOwnerEmail] = useState("");
 
-  // Check authentication on component mount
+  // Subscription fields
+  const [selectedPlan, setSelectedPlan] = useState('basic');
+  const [plans, setPlans] = useState({});
+  const [includeSubscription, setIncludeSubscription] = useState(false);
+
+  // Check authentication and load subscription plans on component mount
   useEffect(() => {
     const token = localStorage.getItem('token');
     if (!token) {
@@ -29,8 +34,19 @@ const RegisterProperty = () => {
       setTimeout(() => {
         navigate('/login');
       }, 2000);
+    } else {
+      loadSubscriptionPlans();
     }
   }, [navigate]);
+
+  const loadSubscriptionPlans = async () => {
+    try {
+      const plansData = await SubscriptionAPI.getPlans();
+      setPlans(plansData);
+    } catch (error) {
+      console.error('Error loading subscription plans:', error);
+    }
+  };
 
   const handleFileChange = (e) => {
     const selectedFiles = Array.from(e.target.files).slice(0, 5);
@@ -78,8 +94,25 @@ const RegisterProperty = () => {
       });
 
       // Pass the token to the API call
-      await PropertiesAPI.create(formData, token);
-      setMsg("Property registered successfully! Waiting for admin approval.");
+      const propertyResponse = await PropertiesAPI.create(formData, token);
+      
+      // If subscription is selected, create subscription for the property
+      if (includeSubscription && propertyResponse._id) {
+        try {
+          const subscriptionData = {
+            propertyId: propertyResponse._id,
+            planType: selectedPlan,
+            paymentMethod: 'card',
+            transactionId: `txn_${Date.now()}`
+          };
+          await SubscriptionAPI.create(subscriptionData, token);
+          setMsg("Property registered successfully with subscription! Waiting for admin approval.");
+        } catch (subscriptionError) {
+          setMsg("Property registered successfully but subscription failed. You can add subscription later from your dashboard.");
+        }
+      } else {
+        setMsg("Property registered successfully! Waiting for admin approval.");
+      }
       
       // Reset form
       setTitle("");
@@ -94,6 +127,8 @@ const RegisterProperty = () => {
       setOwnerName("");
       setOwnerContact("");
       setOwnerEmail("");
+      setSelectedPlan('basic');
+      setIncludeSubscription(false);
       
     } catch (e) {
       setMsg(e.message);
@@ -333,6 +368,62 @@ const RegisterProperty = () => {
           </div>
         </div>
 
+        {/* Subscription Section */}
+        <div className="form-section">
+          <h3>Subscription Plan (Optional)</h3>
+          <div className="subscription-option">
+            <label className="subscription-checkbox">
+              <input
+                type="checkbox"
+                checked={includeSubscription}
+                onChange={(e) => setIncludeSubscription(e.target.checked)}
+              />
+              <span className="checkmark"></span>
+              Include subscription plan to unlock premium features
+            </label>
+          </div>
+
+          {includeSubscription && (
+            <div className="subscription-plans">
+              <p className="subscription-description">
+                Choose a subscription plan to unlock premium features for your property
+              </p>
+              <div className="plans-grid">
+                {Object.entries(plans).map(([planKey, plan]) => (
+                  <div 
+                    key={planKey}
+                    className={`plan-card ${selectedPlan === planKey ? 'selected' : ''}`}
+                    onClick={() => setSelectedPlan(planKey)}
+                  >
+                    <div className="plan-header">
+                      <h4>{plan.name}</h4>
+                      <div className="plan-price">
+                        <span className="price-amount">₹{plan.price}</span>
+                        <span className="price-period">/month</span>
+                      </div>
+                    </div>
+                    <div className="plan-features">
+                      <ul>
+                        {plan.features.map((feature, index) => (
+                          <li key={index}>
+                            <i className="fas fa-check"></i>
+                            {feature}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                    <div className="plan-limits">
+                      <p><strong>Property Limit:</strong> {plan.limits.properties === -1 ? 'Unlimited' : plan.limits.properties}</p>
+                      <p><strong>Staff Assignments:</strong> {plan.limits.staffAssignments === -1 ? 'Unlimited' : plan.limits.staffAssignments}</p>
+                      <p><strong>Maintenance Tracking:</strong> {plan.limits.maintenanceTracking ? 'Yes' : 'No'}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+
         <button type="submit" disabled={loading}>
           {loading ? (
             <>
@@ -353,6 +444,142 @@ const RegisterProperty = () => {
           {msg}
         </div>
       )}
+
+      <style jsx>{`
+        .subscription-option {
+          margin-bottom: 1.5rem;
+        }
+
+        .subscription-checkbox {
+          display: flex;
+          align-items: center;
+          cursor: pointer;
+          font-size: 1rem;
+          font-weight: 500;
+          color: #333;
+        }
+
+        .subscription-checkbox input[type="checkbox"] {
+          margin-right: 0.75rem;
+          width: 18px;
+          height: 18px;
+          cursor: pointer;
+        }
+
+        .subscription-description {
+          margin: 1rem 0;
+          color: #666;
+          font-style: italic;
+        }
+
+        .subscription-plans {
+          margin-top: 1.5rem;
+          padding: 1rem;
+          background: #f8f9fa;
+          border-radius: 8px;
+          border: 1px solid #e9ecef;
+        }
+
+        .plans-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+          gap: 1rem;
+          margin-top: 1rem;
+        }
+
+        .plan-card {
+          border: 2px solid #e9ecef;
+          border-radius: 12px;
+          padding: 1.25rem;
+          cursor: pointer;
+          transition: all 0.3s ease;
+          background: white;
+          box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .plan-card:hover {
+          border-color: #007bff;
+          transform: translateY(-2px);
+          box-shadow: 0 4px 12px rgba(0, 123, 255, 0.15);
+        }
+
+        .plan-card.selected {
+          border-color: #007bff;
+          background: #f8f9ff;
+          box-shadow: 0 4px 12px rgba(0, 123, 255, 0.2);
+        }
+
+        .plan-header {
+          text-align: center;
+          margin-bottom: 1rem;
+        }
+
+        .plan-header h4 {
+          margin: 0 0 0.5rem 0;
+          color: #333;
+          font-size: 1.25rem;
+        }
+
+        .plan-price {
+          display: flex;
+          align-items: baseline;
+          justify-content: center;
+          gap: 0.25rem;
+        }
+
+        .price-amount {
+          font-size: 1.5rem;
+          font-weight: bold;
+          color: #007bff;
+        }
+
+        .price-period {
+          color: #666;
+          font-size: 0.9rem;
+        }
+
+        .plan-features ul {
+          list-style: none;
+          padding: 0;
+          margin: 0 0 1rem 0;
+        }
+
+        .plan-features li {
+          padding: 0.4rem 0;
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
+          font-size: 0.9rem;
+        }
+
+        .plan-features i {
+          color: #28a745;
+          width: 14px;
+          font-size: 0.8rem;
+        }
+
+        .plan-limits {
+          background: #f8f9fa;
+          padding: 0.75rem;
+          border-radius: 6px;
+          font-size: 0.85rem;
+        }
+
+        .plan-limits p {
+          margin: 0.2rem 0;
+          color: #666;
+        }
+
+        @media (max-width: 768px) {
+          .plans-grid {
+            grid-template-columns: 1fr;
+          }
+          
+          .plan-card {
+            padding: 1rem;
+          }
+        }
+      `}</style>
     </div>
   );
 };

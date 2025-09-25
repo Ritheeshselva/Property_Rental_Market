@@ -1,10 +1,3 @@
-export const StaffReportAPI = {
-  submitReport: (assignmentId, reportText, token) => apiRequest(`/api/staff/assignments/${assignmentId}/report`, { method: 'POST', token, body: { reportText } }),
-  getReportsForStaff: (staffId, token) => apiRequest(`/api/staff/${staffId}/reports`, { token }),
-  getAllReports: (token) => apiRequest('/api/staff/reports', { token }),
-  verifyReport: (reportId, token) => apiRequest(`/api/staff/reports/${reportId}/verify`, { method: 'PUT', token }),
-  forwardReport: (reportId, token) => apiRequest(`/api/staff/reports/${reportId}/forward`, { method: 'PUT', token })
-};
 const API_BASE = process.env.REACT_APP_API_BASE || 'http://localhost:5000';
 
 export async function apiRequest(path, { method = 'GET', headers = {}, body, token, isForm = false } = {}) {
@@ -12,10 +5,18 @@ export async function apiRequest(path, { method = 'GET', headers = {}, body, tok
   if (token) finalHeaders.Authorization = `Bearer ${token}`;
   if (!isForm) finalHeaders['Content-Type'] = 'application/json';
 
+  const requestBody = isForm ? body : body ? JSON.stringify(body) : undefined;
+  console.log('API Request:', {
+    url: `${API_BASE}${path}`,
+    method,
+    headers: finalHeaders,
+    body: requestBody
+  });
+
   const res = await fetch(`${API_BASE}${path}`, {
     method,
     headers: finalHeaders,
-    body: isForm ? body : body ? JSON.stringify(body) : undefined,
+    body: requestBody,
   });
   if (!res.ok) {
     let msg = 'Request failed';
@@ -28,7 +29,10 @@ export async function apiRequest(path, { method = 'GET', headers = {}, body, tok
 }
 
 export const AuthAPI = {
-  login: (email, password) => apiRequest('/api/auth/login', { method: 'POST', body: { email, password } }),
+  login: (email, password) => {
+    console.log('Login attempt:', { email, password: '***' });
+    return apiRequest('/api/auth/login', { method: 'POST', body: { email, password } });
+  },
   signup: (name, email, password, role, phone, address) => apiRequest('/api/auth/signup', { method: 'POST', body: { name, email, password, role, phone, address } }),
 };
 
@@ -87,14 +91,16 @@ export const MaintenanceAPI = {
 };
 
 export const SearchAPI = {
-  searchProperties: (params) => {
-    const queryString = new URLSearchParams(params).toString();
-    return apiRequest(`/api/search/properties?${queryString}`);
-  },
-  getSuggestions: (q) => apiRequest(`/api/search/suggestions?q=${encodeURIComponent(q)}`),
-  getPopular: () => apiRequest('/api/search/popular'),
-  getFilters: () => apiRequest('/api/search/filters'),
+  searchProperties: (query) => apiRequest(`/api/search?${new URLSearchParams(query)}`),
   getNearby: (lat, lng, radius) => apiRequest(`/api/search/nearby?lat=${lat}&lng=${lng}&radius=${radius}`),
+};
+
+export const StaffReportAPI = {
+  submitReport: (assignmentId, reportText, token) => apiRequest(`/api/staff/assignments/${assignmentId}/report`, { method: 'POST', token, body: { reportText } }),
+  getReportsForStaff: (staffId, token) => apiRequest(`/api/staff/${staffId}/reports`, { token }),
+  getAllReports: (token) => apiRequest('/api/staff/reports', { token }),
+  verifyReport: (reportId, token) => apiRequest(`/api/staff/reports/${reportId}/verify`, { method: 'PUT', token }),
+  forwardReport: (reportId, token) => apiRequest(`/api/staff/reports/${reportId}/forward`, { method: 'PUT', token })
 };
 
 

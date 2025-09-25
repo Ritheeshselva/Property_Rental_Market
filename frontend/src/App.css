@@ -1501,6 +1501,154 @@ body {
   width: 16px;
 }
 
+.property-description {
+  margin-bottom: 1rem;
+  padding: 1rem;
+  background: #f8f9fa;
+  border-radius: 8px;
+  border-left: 3px solid #38b2ac;
+}
+
+.property-description p {
+  color: #7f8c8d;
+  font-size: 0.9rem;
+  line-height: 1.5;
+  margin: 0;
+}
+
+/* Owner Information Styles */
+.owner-info {
+  margin-bottom: 1.5rem;
+  padding: 1rem;
+  background: #f8f9fa;
+  border-radius: 8px;
+  border-left: 3px solid #3498db;
+}
+
+.owner-info h5 {
+  color: #2c3e50;
+  margin: 0 0 0.75rem 0;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.owner-details {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.owner-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  color: #7f8c8d;
+  font-size: 0.9rem;
+}
+
+.owner-item i {
+  color: #3498db;
+  width: 16px;
+  text-align: center;
+}
+
+/* Additional Details Styles */
+.additional-details {
+  margin-bottom: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.detail-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  color: #7f8c8d;
+  font-size: 0.9rem;
+}
+
+.detail-item i {
+  color: #38b2ac;
+  width: 16px;
+  text-align: center;
+}
+
+/* Subscription Status Styles */
+.subscription-status {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  background: linear-gradient(45deg, #f39c12, #e67e22);
+  color: white;
+  border-radius: 25px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  margin-bottom: 1rem;
+  width: fit-content;
+}
+
+.subscription-status i {
+  font-size: 0.9rem;
+}
+
+/* Report Content Styles */
+.report-content {
+  margin-bottom: 1rem;
+  padding: 1rem;
+  background: #f8f9fa;
+  border-radius: 8px;
+  border-left: 3px solid #e74c3c;
+}
+
+.report-content h5 {
+  color: #2c3e50;
+  margin: 0 0 0.75rem 0;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.report-content p {
+  color: #7f8c8d;
+  font-size: 0.9rem;
+  line-height: 1.5;
+  margin: 0;
+}
+
+/* Report Images Styles */
+.report-images {
+  margin-bottom: 1rem;
+}
+
+.report-images h5 {
+  color: #2c3e50;
+  margin: 0 0 0.75rem 0;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.image-thumbnails {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.image-thumbnails img {
+  width: 60px;
+  height: 60px;
+  object-fit: cover;
+  border-radius: 8px;
+  border: 2px solid #e9ecef;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.image-thumbnails img:hover {
+  border-color: #38b2ac;
+  transform: scale(1.1);
+}
+
 .property-lister {
   color: #7f8c8d;
   font-size: 0.9rem;

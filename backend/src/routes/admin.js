@@ -23,7 +23,9 @@ const getBaseUrl = (req) => {
 // List pending properties (admin)
 router.get('/pending', auth('admin'), async (req, res) => {
   try {
-    const list = await Property.find({ status: 'pending' }).sort({ createdAt: -1 });
+    const list = await Property.find({ status: 'pending' })
+      .populate('owner', 'name email phone address')
+      .sort({ createdAt: -1 });
     
     // Convert image paths to full URLs for all properties
     const listWithFullUrls = list.map(property => {

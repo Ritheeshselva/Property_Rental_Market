@@ -1,11 +1,9 @@
 
 import { useEffect, useState, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { AdminAPI, StaffAPI, SubscriptionAPI, MaintenanceAPI, StaffReportAPI } from '../api';
 import { PropertiesAPI } from '../api';
 
 const AdminDashboard = () => {
-  const navigate = useNavigate();
   const [pendingProperties, setPendingProperties] = useState([]);
   const [approvedProperties, setApprovedProperties] = useState([]);
   const [staff, setStaff] = useState([]);
@@ -13,7 +11,6 @@ const AdminDashboard = () => {
   const [maintenance, setMaintenance] = useState([]);
   const [loading, setLoading] = useState(true);
   const [staffReports, setStaffReports] = useState([]);
-  const [reportLoading, setReportLoading] = useState(false);
   const [error, setError] = useState('');
   const [activeTab, setActiveTab] = useState('pending');
   const [showStaffForm, setShowStaffForm] = useState(false);
@@ -301,7 +298,109 @@ const AdminDashboard = () => {
                   <div className="admin-properties">
                     {pendingProperties.map((p) => (
                       <div key={p._id} className="admin-property-card pending">
-                        {/* ...existing code for pending property card... */}
+                        <div className="property-image">
+                          <img 
+                            src={p.images && p.images[0] ? p.images[0] : 'https://via.placeholder.com/400x200/f39c12/ffffff?text=No+Image'} 
+                            alt={p.title} 
+                          />
+                          <div className="property-status pending-badge">
+                            <i className="fas fa-clock"></i>
+                            <span>Pending Review</span>
+                          </div>
+                        </div>
+                        
+                        <div className="property-details">
+                          <h4>{p.title}</h4>
+                          <div className="property-meta">
+                            <span className="meta-item">
+                              <i className="fas fa-money-bill-wave"></i>
+                              ₹{p.pricePerMonth}/month
+                            </span>
+                            <span className="meta-item">
+                              <i className="fas fa-bed"></i>
+                              {p.rooms} rooms
+                            </span>
+                            <span className="meta-item">
+                              <i className="fas fa-ruler-combined"></i>
+                              {p.totalAreaSqFt} sq ft
+                            </span>
+                          </div>
+                          <div className="property-address">
+                            <i className="fas fa-map-marker-alt"></i>
+                            <span>{p.address}</span>
+                          </div>
+                          {p.description && (
+                            <div className="property-description">
+                              <p>{p.description}</p>
+                            </div>
+                          )}
+                          
+                          {/* Owner Information */}
+                          <div className="owner-info">
+                            <h5>Owner Details:</h5>
+                            <div className="owner-details">
+                              <div className="owner-item">
+                                <i className="fas fa-user"></i>
+                                <span>{p.owner?.name || 'Not provided'}</span>
+                              </div>
+                              <div className="owner-item">
+                                <i className="fas fa-phone"></i>
+                                <span>{p.owner?.phone || 'Not provided'}</span>
+                              </div>
+                              <div className="owner-item">
+                                <i className="fas fa-envelope"></i>
+                                <span>{p.owner?.email || 'Not provided'}</span>
+                              </div>
+                              {p.owner?.address && (
+                                <div className="owner-item">
+                                  <i className="fas fa-home"></i>
+                                  <span>{p.owner.address}</span>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+
+                          {/* Property Details */}
+                          <div className="additional-details">
+                            <div className="detail-item">
+                              <i className="fas fa-compass"></i>
+                              <span>Facing: {p.facing}</span>
+                            </div>
+                            <div className="detail-item">
+                              <i className="fas fa-money-bill-wave"></i>
+                              <span>Advance: ₹{p.advanceAmount}</span>
+                            </div>
+                            <div className="detail-item">
+                              <i className="fas fa-calendar"></i>
+                              <span>Submitted: {new Date(p.createdAt).toLocaleDateString()}</span>
+                            </div>
+                          </div>
+
+                          {/* Subscription Status */}
+                          {p.hasSubscription && (
+                            <div className="subscription-status">
+                              <i className="fas fa-crown"></i>
+                              <span>Has {p.subscriptionType} subscription</span>
+                            </div>
+                          )}
+                        </div>
+                        
+                        <div className="admin-actions">
+                          <button 
+                            className="action-btn approve-btn"
+                            onClick={() => handleAction(p._id, 'approve')}
+                          >
+                            <i className="fas fa-check"></i>
+                            Approve
+                          </button>
+                          <button 
+                            className="action-btn reject-btn"
+                            onClick={() => handleAction(p._id, 'reject')}
+                          >
+                            <i className="fas fa-times"></i>
+                            Reject
+                          </button>
+                        </div>
                       </div>
                     ))}
                   </div>
@@ -317,14 +416,7 @@ const AdminDashboard = () => {
                   </h2>
                   <p>Review, verify, and forward staff reports to property owners</p>
                 </div>
-                {reportLoading ? (
-                  <div className="loading-container">
-                    <div className="loading-spinner">
-                      <i className="fas fa-spinner fa-spin"></i>
-                    </div>
-                    <p>Loading staff reports...</p>
-                  </div>
-                ) : staffReports.length === 0 ? (
+                {staffReports.length === 0 ? (
                   <div className="empty-state">
                     <div className="empty-icon">
                       <i className="fas fa-file-alt"></i>
@@ -336,7 +428,65 @@ const AdminDashboard = () => {
                   <div className="admin-properties">
                     {staffReports.map(report => (
                       <div key={report._id} className="admin-property-card">
-                        {/* ...existing code for staff report card... */}
+                        <div className="property-details">
+                          <h4>{report.property ? report.property.title : 'Property Not Found'}</h4>
+                          <div className="property-meta">
+                            <div className="meta-item">
+                              <i className="fas fa-user"></i>
+                              <span>Staff: {report.staff ? report.staff.name : 'Unknown'}</span>
+                            </div>
+                            <div className="meta-item">
+                              <i className="fas fa-calendar"></i>
+                              <span>Submitted: {new Date(report.createdAt).toLocaleDateString()}</span>
+                            </div>
+                            <div className="meta-item">
+                              <i className="fas fa-flag"></i>
+                              <span>Status: {report.status || 'Pending'}</span>
+                            </div>
+                          </div>
+                          
+                          {report.property && (
+                            <div className="property-address">
+                              <i className="fas fa-map-marker-alt"></i>
+                              <span>{report.property.address}</span>
+                            </div>
+                          )}
+
+                          <div className="report-content">
+                            <h5>Report Details:</h5>
+                            <p>{report.reportText || 'No details provided'}</p>
+                          </div>
+
+                          {report.images && report.images.length > 0 && (
+                            <div className="report-images">
+                              <h5>Attached Images:</h5>
+                              <div className="image-thumbnails">
+                                {report.images.map((image, index) => (
+                                  <img key={index} src={image} alt={`Report ${index + 1}`} />
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                        
+                        <div className="admin-actions">
+                          <button className="action-btn view-btn">
+                            <i className="fas fa-eye"></i>
+                            View Details
+                          </button>
+                          {report.status === 'pending' && (
+                            <>
+                              <button className="action-btn approve-btn">
+                                <i className="fas fa-check"></i>
+                                Verify
+                              </button>
+                              <button className="action-btn view-btn">
+                                <i className="fas fa-share"></i>
+                                Forward to Owner
+                              </button>
+                            </>
+                          )}
+                        </div>
                       </div>
                     ))}
                   </div>

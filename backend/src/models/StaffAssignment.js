@@ -7,21 +7,22 @@ const staffAssignmentSchema = new mongoose.Schema(
     assignedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true }, // Admin who assigned
     assignmentType: { 
       type: String, 
-      enum: ['maintenance', 'inspection', 'cleaning', 'emergency', 'general'], 
+      enum: ['monthly_inspection'], 
+      default: 'monthly_inspection',
       required: true 
     },
     status: { 
       type: String, 
-      enum: ['assigned', 'accepted', 'in_progress', 'completed', 'cancelled'], 
+      enum: ['assigned', 'report_pending', 'report_submitted', 'completed'], 
       default: 'assigned' 
     },
     assignedDate: { type: Date, default: Date.now },
-    dueDate: { type: Date },
-    completedDate: { type: Date },
-    priority: { 
+    nextInspectionDate: { type: Date },
+    lastInspectionDate: { type: Date },
+    inspectionFrequency: { 
       type: String, 
-      enum: ['low', 'medium', 'high', 'urgent'], 
-      default: 'medium' 
+      enum: ['monthly', 'quarterly', 'biannual', 'annual'], 
+      default: 'monthly' 
     },
     description: { type: String },
     instructions: { type: String },

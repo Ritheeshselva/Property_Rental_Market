@@ -69,7 +69,12 @@ const Home = () => {
                   <div className="property-image">
                     <img 
                       src={p.images && p.images[0] ? p.images[0] : "https://via.placeholder.com/400x250/3498db/ffffff?text=No+Image"} 
-                      alt={p.title} 
+                      alt={p.title}
+                      onError={(e) => {
+                        console.log("Home page image failed to load:", e.target.src);
+                        e.target.onerror = null;
+                        e.target.src = "https://via.placeholder.com/400x250/3498db/ffffff?text=No+Image";
+                      }}
                     />
                     <div className="property-badge approved">
                       <i className="fas fa-check-circle"></i> Verified

@@ -25,7 +25,12 @@ const AdminDashboard = () => {
   // State for property assignment modal
   const [showAssignModal, setShowAssignModal] = useState(false);
   const [assignStaffId, setAssignStaffId] = useState(null);
-  const [assignForm, setAssignForm] = useState({ propertyId: '', assignmentType: '', dueDate: '', description: '', instructions: '', priority: 'medium' });
+  const [assignForm, setAssignForm] = useState({ 
+    propertyId: '', 
+    inspectionFrequency: 'monthly', 
+    description: '', 
+    instructions: '' 
+  });
   const [assignLoading, setAssignLoading] = useState(false);
 
     // Fetch all dashboard data
@@ -57,7 +62,12 @@ const AdminDashboard = () => {
   // Open assign modal for a staff member
   const openAssignModal = (staffId) => {
     setAssignStaffId(staffId);
-    setAssignForm({ propertyId: '', assignmentType: '', dueDate: '', description: '', instructions: '', priority: 'medium' });
+    setAssignForm({ 
+      propertyId: '', 
+      inspectionFrequency: 'monthly', 
+      description: '', 
+      instructions: '' 
+    });
     setShowAssignModal(true);
   };
 
@@ -65,14 +75,22 @@ const AdminDashboard = () => {
     e.preventDefault();
     setAssignLoading(true);
     try {
+      console.log('Assigning property to staff:', {
+        staffId: assignStaffId,
+        formData: assignForm
+      });
+      
       await StaffAPI.assign(assignStaffId, assignForm, token);
+      alert('Property assigned successfully!');
       setShowAssignModal(false);
       setAssignStaffId(null);
       loadData();
     } catch (err) {
-      alert(err.message);
+      console.error('Error assigning property:', err);
+      alert(`Failed to assign property: ${err.message}`);
+    } finally {
+      setAssignLoading(false);
     }
-    setAssignLoading(false);
   };
 
   useEffect(() => {
@@ -727,57 +745,41 @@ const AdminDashboard = () => {
                             ))}
                           </select>
                         </div>
+                        
                         <div className="input-group">
-                          <label>Assignment Type</label>
+                          <label>Inspection Frequency</label>
                           <select
-                            value={assignForm.assignmentType}
-                            onChange={e => setAssignForm({ ...assignForm, assignmentType: e.target.value })}
+                            value={assignForm.inspectionFrequency}
+                            onChange={e => setAssignForm({ ...assignForm, inspectionFrequency: e.target.value })}
                             required
                           >
-                            <option value="">Select type</option>
-                            <option value="maintenance">Maintenance</option>
-                            <option value="inspection">Inspection</option>
-                            <option value="cleaning">Cleaning</option>
-                            <option value="general">General</option>
+                            <option value="monthly">Monthly</option>
+                            <option value="quarterly">Quarterly (Every 3 months)</option>
+                            <option value="biannual">Biannual (Every 6 months)</option>
+                            <option value="annual">Annual (Yearly)</option>
                           </select>
                         </div>
-                        <div className="input-group">
-                          <label>Due Date</label>
-                          <input
-                            type="date"
-                            value={assignForm.dueDate}
-                            onChange={e => setAssignForm({ ...assignForm, dueDate: e.target.value })}
-                          />
-                        </div>
+                        
                         <div className="input-group">
                           <label>Description</label>
                           <textarea
                             value={assignForm.description}
                             onChange={e => setAssignForm({ ...assignForm, description: e.target.value })}
+                            placeholder="Describe what the staff should be looking for during inspections"
                           />
                         </div>
+                        
                         <div className="input-group">
                           <label>Instructions</label>
                           <textarea
                             value={assignForm.instructions}
                             onChange={e => setAssignForm({ ...assignForm, instructions: e.target.value })}
+                            placeholder="Provide any specific instructions for the staff member"
                           />
-                        </div>
-                        <div className="input-group">
-                          <label>Priority</label>
-                          <select
-                            value={assignForm.priority}
-                            onChange={e => setAssignForm({ ...assignForm, priority: e.target.value })}
-                          >
-                            <option value="low">Low</option>
-                            <option value="medium">Medium</option>
-                            <option value="high">High</option>
-                            <option value="urgent">Urgent</option>
-                          </select>
                         </div>
                         <div className="form-actions">
                           <button type="submit" className="cta-btn primary" disabled={assignLoading}>
-                            {assignLoading ? 'Assigning...' : 'Assign Property'}
+                            {assignLoading ? 'Assigning...' : 'Assign for Monthly Inspection'}
                           </button>
                           <button type="button" className="cta-btn secondary" onClick={() => setShowAssignModal(false)}>
                             Cancel

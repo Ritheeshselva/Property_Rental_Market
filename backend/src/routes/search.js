@@ -4,7 +4,7 @@ const PropertySearch = require('../models/PropertySearch');
 
 const router = express.Router();
 
-// Enhanced property search
+// Enhanced property search - this route is used by the frontend's SearchAPI.searchProperties()
 router.get('/properties', async (req, res) => {
   try {
     const {
@@ -29,7 +29,9 @@ router.get('/properties', async (req, res) => {
       filter.$or = [
         { address: { $regex: location, $options: 'i' } },
         { 'location.city': { $regex: location, $options: 'i' } },
-        { 'location.state': { $regex: location, $options: 'i' } }
+        { 'location.state': { $regex: location, $options: 'i' } },
+        { 'location.area': { $regex: location, $options: 'i' } },
+        { area: { $regex: location, $options: 'i' } } // Added area field for direct matching
       ];
     }
 

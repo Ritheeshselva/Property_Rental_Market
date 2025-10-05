@@ -12,6 +12,11 @@ const RegisterProperty = () => {
   const [facing, setFacing] = useState("");
   const [rooms, setRooms] = useState("");
   const [description, setDescription] = useState("");
+  // Location fields
+  const [city, setCity] = useState("");
+  const [state, setState] = useState("");
+  const [area, setArea] = useState("");
+  const [pincode, setPincode] = useState("");
   const [files, setFiles] = useState([]);
   const [msg, setMsg] = useState("");
   const [loading, setLoading] = useState(false);
@@ -84,6 +89,12 @@ const RegisterProperty = () => {
       formData.append("rooms", rooms);
       formData.append("description", description);
       
+      // Location information
+      formData.append("city", city);
+      formData.append("state", state);
+      formData.append("area", area);
+      formData.append("pincode", pincode);
+      
       // Add personal info
       formData.append("ownerName", ownerName);
       formData.append("ownerContact", ownerContact);
@@ -124,6 +135,11 @@ const RegisterProperty = () => {
       setRooms("");
       setDescription("");
       setFiles([]);
+      // Reset location fields
+      setCity("");
+      setState("");
+      setArea("");
+      setPincode("");
       setOwnerName("");
       setOwnerContact("");
       setOwnerEmail("");
@@ -232,6 +248,66 @@ const RegisterProperty = () => {
               onChange={(e) => setAddress(e.target.value)}
               required
             />
+          </div>
+          
+          {/* Location Information */}
+          <div className="location-fields">
+            <h4>Location Details</h4>
+            <div className="input-group">
+              <label htmlFor="area">
+                <i className="fas fa-map"></i> Area/Locality
+              </label>
+              <input
+                id="area"
+                type="text"
+                placeholder="Enter area or locality"
+                value={area}
+                onChange={(e) => setArea(e.target.value)}
+                required
+              />
+            </div>
+            
+            <div className="input-group">
+              <label htmlFor="city">
+                <i className="fas fa-city"></i> City
+              </label>
+              <input
+                id="city"
+                type="text"
+                placeholder="Enter city"
+                value={city}
+                onChange={(e) => setCity(e.target.value)}
+                required
+              />
+            </div>
+            
+            <div className="input-group">
+              <label htmlFor="state">
+                <i className="fas fa-map-marked-alt"></i> State
+              </label>
+              <input
+                id="state"
+                type="text"
+                placeholder="Enter state"
+                value={state}
+                onChange={(e) => setState(e.target.value)}
+                required
+              />
+            </div>
+            
+            <div className="input-group">
+              <label htmlFor="pincode">
+                <i className="fas fa-map-pin"></i> Pincode
+              </label>
+              <input
+                id="pincode"
+                type="text"
+                placeholder="Enter pincode"
+                value={pincode}
+                onChange={(e) => setPincode(e.target.value)}
+                required
+              />
+            </div>
           </div>
 
           <div className="input-group">

@@ -1,0 +1,87 @@
+/* Additional styles to improve terms and conditions visibility */
+
+/* Make section titles more prominent */
+.terms-content section h4 {
+  background-color: #e6f2ff;
+  padding: 8px 12px;
+  border-radius: 4px;
+  margin-top: 1.5rem;
+  font-size: 1.1rem;
+  border-left: 4px solid #3182ce;
+  color: #1a202c;
+}
+
+/* Improve readability of list items */
+.terms-content .terms-list li {
+  padding: 6px 0;
+  border-bottom: 1px dotted #e2e8f0;
+}
+
+.terms-content .terms-list li:last-child {
+  border-bottom: none;
+}
+
+/* Highlight important terms */
+.terms-content strong {
+  background-color: #fffde7;
+  padding: 0 3px;
+  border-radius: 2px;
+}
+
+/* Improve scrollbar visibility */
+.terms-content::-webkit-scrollbar {
+  width: 10px;
+}
+
+.terms-content::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 8px;
+}
+
+.terms-content::-webkit-scrollbar-thumb {
+  background: #3182ce;
+  border-radius: 8px;
+}
+
+.terms-content::-webkit-scrollbar-thumb:hover {
+  background: #2c5282;
+}
+
+/* Better contrast for scroll notice */
+.scroll-notice p {
+  color: #2c5282;
+  font-weight: 600;
+  background-color: #ebf8ff;
+  padding: 8px;
+  border-radius: 4px;
+  display: inline-block;
+}
+
+/* Print-like appearance for terms content */
+.terms-content {
+  background-color: white !important;
+  box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.1);
+  border: 1px solid #cbd5e0 !important;
+}
+
+/* Terms notice */
+.terms-notice {
+  background-color: #ebf8ff;
+  border-left: 4px solid #3182ce;
+  padding: 12px;
+  margin-bottom: 20px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  color: #2c5282;
+}
+
+.terms-notice i {
+  font-size: 1.5rem;
+  margin-right: 12px;
+}
+
+.terms-notice p {
+  margin: 0;
+  font-weight: 600;
+}

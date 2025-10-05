@@ -5,21 +5,24 @@ const User = require('../models/User');
 
 const router = express.Router();
 
-// Signup (user/owner)
+// Signup (user/owner/staff)
 router.post('/signup', async (req, res) => {
   try {
+    // Log incoming signup payload for debugging (will include role)
+    console.log('POST /api/auth/signup - body:', req.body);
     const { name, email, password, role = 'user', phone, address } = req.body;
     if (!email || !password) return res.status(400).json({ message: 'Email and password required' });
-    
+
     // Validate role
-    const allowedRoles = ['user', 'owner'];
+    const allowedRoles = ['user', 'owner', 'staff'];
     if (!allowedRoles.includes(role)) {
-      return res.status(400).json({ message: 'Invalid role. Allowed roles: user, owner' });
+      console.log('Signup - invalid role received:', role);
+      return res.status(400).json({ message: 'Invalid role. Allowed roles: user, owner, staff' });
     }
-    
+
     const existing = await User.findOne({ email });
     if (existing) return res.status(400).json({ message: 'Email already in use' });
-    
+
     const passwordHash = await bcrypt.hash(password, 10);
     const user = await User.create({ 
       name, 
@@ -58,13 +61,14 @@ router.post('/login', async (req, res) => {
     
     res.json({ 
       token, 
+      id: user._id, // Include user ID in response
       role: user.role, 
       name: user.name, 
       email: user.email,
       phone: user.phone,
       address: user.address,
       subscriptionStatus: user.subscriptionStatus,
-      staffId: user.staffId,
+      staffId: user.staffId || user._id, // Ensure staffId is available and defaults to _id
       specialization: user.specialization
     });
   } catch (e) {

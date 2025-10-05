@@ -23,6 +23,7 @@ const propertySchema = new mongoose.Schema(
     location: {
       city: { type: String },
       state: { type: String },
+      area: { type: String }, // Added area field
       pincode: { type: String },
       coordinates: {
         lat: { type: Number },

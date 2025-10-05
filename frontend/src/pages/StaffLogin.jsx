@@ -20,8 +20,17 @@ const StaffLogin = () => {
         setLoading(false);
         return;
       }
+      // Use the correct user ID format
       localStorage.setItem('token', data.token);
-      localStorage.setItem('user', JSON.stringify(data));
+      localStorage.setItem('user', JSON.stringify({
+        _id: data.id, // Store as _id for consistency
+        id: data.id,  // Keep id as well for backwards compatibility
+        name: data.name,
+        email: data.email,
+        role: data.role,
+        phone: data.phone,
+        staffId: data.staffId || data.id // Ensure staffId is available
+      }));
       
       // Trigger auth change event to update navbar
       window.dispatchEvent(new Event('authChanged'));

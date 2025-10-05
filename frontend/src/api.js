@@ -24,8 +24,35 @@ export async function apiRequest(path, { method = 'GET', headers = {}, body, tok
     throw new Error(msg);
   }
   const ct = res.headers.get('content-type') || '';
-  if (ct.includes('application/json')) return res.json();
-  return res.text();
+  let responseData;
+  
+  if (ct.includes('application/json')) {
+    responseData = await res.json();
+    
+    // Log image URLs when retrieving property data
+    if (path.includes('/properties/') || path.includes('/staff/') || path.includes('/assignments')) {
+      if (responseData.images) {
+        console.log('Response includes images:', responseData.images);
+      } else if (Array.isArray(responseData)) {
+        // For array responses (lists of properties/assignments)
+        const hasImages = responseData.some(item => item.images || (item.property && item.property.images));
+        if (hasImages) {
+          console.log('Response contains items with images');
+          
+          // Log the first item with images
+          const firstWithImages = responseData.find(item => item.images || (item.property && item.property.images));
+          if (firstWithImages) {
+            console.log('Sample item with images:', 
+              firstWithImages.images || (firstWithImages.property && firstWithImages.property.images));
+          }
+        }
+      }
+    }
+  } else {
+    responseData = await res.text();
+  }
+  
+  return responseData;
 }
 
 export const AuthAPI = {
@@ -38,9 +65,12 @@ export const AuthAPI = {
 
 export const PropertiesAPI = {
   listApproved: () => apiRequest('/api/properties'),
+  listOwnerProperties: (token) => apiRequest('/api/properties/my', { token }),
   create: (formData, token) => apiRequest('/api/properties', { method: 'POST', token, body: formData, isForm: true }),
   get: (id) => apiRequest(`/api/properties/${id}`),
   book: (id, payload, token) => apiRequest(`/api/properties/${id}/book`, { method: 'POST', token, body: payload }),
+  submitSupportRequest: (bookingId, payload, token) => apiRequest(`/api/properties/bookings/${bookingId}/support`, { method: 'POST', token, body: payload }),
+  completePayment: (bookingId, payload, token) => apiRequest(`/api/properties/bookings/${bookingId}/payment`, { method: 'POST', token, body: payload }),
 };
 
 export const AdminAPI = {
@@ -64,7 +94,23 @@ export const StaffAPI = {
   getDetails: (id, token) => apiRequest(`/api/staff/${id}`, { token }),
   update: (id, data, token) => apiRequest(`/api/staff/${id}`, { method: 'PUT', token, body: data }),
   assign: (staffId, data, token) => apiRequest(`/api/staff/${staffId}/assign`, { method: 'POST', token, body: data }),
-  getAssignments: (staffId, token) => apiRequest(`/api/staff/${staffId}/assignments`, { token }),
+  getAssignments: (staffId, token) => {
+    if (!staffId) {
+      console.error('StaffAPI.getAssignments called without staffId');
+      return Promise.reject(new Error('Staff ID is required'));
+    }
+    console.log('Fetching assignments for staff ID:', staffId, 'Token available:', !!token);
+    
+    return apiRequest(`/api/staff/${staffId}/assignments`, { token })
+      .then(response => {
+        console.log(`Successfully fetched ${response.length} assignments for staff ${staffId}`);
+        return response;
+      })
+      .catch(error => {
+        console.error(`Error fetching assignments for staff ${staffId}:`, error);
+        throw error;
+      });
+  },
   updateAssignment: (assignmentId, data, token) => apiRequest(`/api/staff/assignments/${assignmentId}`, { method: 'PUT', token, body: data }),
   delete: (id, token) => apiRequest(`/api/staff/${id}`, { method: 'DELETE', token }),
 };
@@ -91,16 +137,27 @@ export const MaintenanceAPI = {
 };
 
 export const SearchAPI = {
-  searchProperties: (query) => apiRequest(`/api/search?${new URLSearchParams(query)}`),
+  searchProperties: (query) => apiRequest(`/api/search/properties?${new URLSearchParams(query)}`),
   getNearby: (lat, lng, radius) => apiRequest(`/api/search/nearby?lat=${lat}&lng=${lng}&radius=${radius}`),
+  getFilters: () => apiRequest('/api/search/filters'),
+  getSuggestions: (query) => apiRequest(`/api/search/suggestions?q=${encodeURIComponent(query)}`),
 };
 
 export const StaffReportAPI = {
-  submitReport: (assignmentId, reportText, token) => apiRequest(`/api/staff/assignments/${assignmentId}/report`, { method: 'POST', token, body: { reportText } }),
+  submitReport: (assignmentId, reportData, token) => apiRequest(`/api/staff/assignments/${assignmentId}/report`, { 
+    method: 'POST', 
+    token, 
+    body: reportData 
+  }),
   getReportsForStaff: (staffId, token) => apiRequest(`/api/staff/${staffId}/reports`, { token }),
   getAllReports: (token) => apiRequest('/api/staff/reports', { token }),
-  verifyReport: (reportId, token) => apiRequest(`/api/staff/reports/${reportId}/verify`, { method: 'PUT', token }),
+  reviewReport: (reportId, token) => apiRequest(`/api/staff/reports/${reportId}/review`, { method: 'PUT', token }),
   forwardReport: (reportId, token) => apiRequest(`/api/staff/reports/${reportId}/forward`, { method: 'PUT', token })
+};
+
+export const ReportsAPI = {
+  getOwnerReports: (token) => apiRequest('/api/reports/owner/reports', { token }),
+  acknowledgeReport: (reportId, token) => apiRequest(`/api/reports/owner/reports/${reportId}/acknowledge`, { method: 'PUT', token })
 };
 
 

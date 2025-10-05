@@ -1,6 +1,27 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
-import { MaintenanceAPI, StaffAPI, StaffReportAPI } from "../api";
+import { useNavigate, Link } from "react-router-dom";
+import { MaintenanceAPI, StaffAPI, StaffReportAPI, PropertiesAPI } from "../api";
+import "./StaffDashboard.css";
+
+// Helper function to normalize image URLs
+const getImageUrl = (image) => {
+  if (!image) return null;
+  
+  // If it's already a full URL, return it
+  if (image.startsWith('http')) {
+    return image;
+  }
+  
+  // Handle relative paths
+  const apiBase = process.env.REACT_APP_API_BASE || 'http://localhost:5000';
+  if (image.startsWith('/uploads/')) {
+    return `${apiBase}${image}`;
+  } else if (image.startsWith('uploads/')) {
+    return `${apiBase}/${image}`;
+  } else {
+    return `${apiBase}/uploads/${image}`;
+  }
+};
 
 const StaffDashboard = () => {
   const navigate = useNavigate();
@@ -12,6 +33,9 @@ const StaffDashboard = () => {
   const [tenantDetails, setTenantDetails] = useState({});
   const [reportText, setReportText] = useState({});
   const [reportSubmitting, setReportSubmitting] = useState({});
+  const [selectedProperty, setSelectedProperty] = useState(null);
+  const [propertyDetailsLoading, setPropertyDetailsLoading] = useState(false);
+  const [propertyDetails, setPropertyDetails] = useState(null);
 
   useEffect(() => {
     const token = localStorage.getItem('token');
@@ -23,31 +47,72 @@ const StaffDashboard = () => {
     }
 
     setUser(userData);
-    loadDashboardData();
+    loadDashboardData(userData);
   }, [navigate]);
 
-  const loadDashboardData = async () => {
+  const loadDashboardData = async (currentUser) => {
     try {
       const token = localStorage.getItem('token');
-      const [assignmentsRes, maintenanceRes] = await Promise.all([
-        StaffAPI.getAssignments(user?.id, token),
-        MaintenanceAPI.getStaffAssignments({}, token)
-      ]);
-      setAssignments(assignmentsRes);
-      setMaintenance(maintenanceRes);
+      const userData = currentUser || user || JSON.parse(localStorage.getItem('user') || '{}');
+      
+      // Debug output of the full user data
+      console.log('Staff Dashboard - Full User Data:', JSON.stringify(userData, null, 2));
+      
+      // Check for all possible ID formats
+      const userId = userData?._id || userData?.staffId || userData?.id;
+      
+      if (!userId) {
+        console.error('User ID not found in userData:', userData);
+        setLoading(false);
+        return;
+      }
+      
+      console.log('Staff Dashboard: Loading assignments for staff ID:', userId);
+      
+      let assignmentsRes = [];
+      let maintenanceRes = [];
+      
+      try {
+        assignmentsRes = await StaffAPI.getAssignments(userId, token);
+        console.log('Staff assignments loaded:', assignmentsRes.length);
+        
+        // Debug the first assignment's images
+        if (assignmentsRes.length > 0 && assignmentsRes[0].property) {
+          console.log('First assignment property:', assignmentsRes[0].property.title);
+          console.log('First assignment images:', JSON.stringify(assignmentsRes[0].property.images));
+        }
+        
+        setAssignments(assignmentsRes);
+      } catch (err) {
+        console.error('Error loading staff assignments:', err);
+        setAssignments([]);
+      }
+      
+      try {
+        maintenanceRes = await MaintenanceAPI.getStaffAssignments({staffId: userId}, token);
+        console.log('Staff maintenance tasks loaded:', maintenanceRes.length);
+        setMaintenance(maintenanceRes);
+      } catch (err) {
+        console.error('Error loading maintenance tasks:', err);
+        setMaintenance([]);
+      }
 
       // Fetch tenant details for each assignment's property
       const tenantMap = {};
-      for (const assignment of assignmentsRes) {
-        try {
-          const res = await fetch(`${process.env.REACT_APP_API_BASE || 'http://localhost:5000'}/api/properties/${assignment.property._id}/bookings`);
-          if (res.ok) {
-            const bookings = await res.json();
-            // Find the latest confirmed booking
-            const confirmed = bookings.find(b => b.status === 'confirmed');
-            if (confirmed) tenantMap[assignment._id] = confirmed;
+      for (const assignment of (assignmentsRes || [])) {
+        if (assignment && assignment.property && assignment.property._id) {
+          try {
+            const res = await fetch(`${process.env.REACT_APP_API_BASE || 'http://localhost:5000'}/api/properties/${assignment.property._id}/bookings`);
+            if (res.ok) {
+              const bookings = await res.json();
+              // Find the latest confirmed booking
+              const confirmed = bookings.find(b => b.status === 'confirmed');
+              if (confirmed) tenantMap[assignment._id] = confirmed;
+            }
+          } catch (err) {
+            console.error('Error fetching tenant details for property:', assignment.property._id, err);
           }
-        } catch {}
+        }
       }
       setTenantDetails(tenantMap);
     } catch (error) {
@@ -56,6 +121,49 @@ const StaffDashboard = () => {
       setLoading(false);
     }
   };
+  const handleViewPropertyDetails = async (propertyId) => {
+    setSelectedProperty(propertyId);
+    setPropertyDetailsLoading(true);
+    
+    try {
+      console.log('Fetching details for property ID:', propertyId);
+      const details = await PropertiesAPI.get(propertyId);
+      console.log('Property details received:', details);
+      
+      // Log image URLs for debugging
+      if (details && details.images) {
+        console.log('Property images:', details.images);
+      }
+      
+      setPropertyDetails(details);
+    } catch (error) {
+      console.error('Error fetching property details:', error);
+      alert('Could not load property details');
+    } finally {
+      setPropertyDetailsLoading(false);
+    }
+  };
+  
+  const closePropertyDetailsModal = () => {
+    setSelectedProperty(null);
+    setPropertyDetails(null);
+  };
+  
+  // Add ESC key handler for modal
+  useEffect(() => {
+    const handleEscKey = (event) => {
+      if (event.key === 'Escape' && selectedProperty) {
+        closePropertyDetailsModal();
+      }
+    };
+    
+    window.addEventListener('keydown', handleEscKey);
+    
+    return () => {
+      window.removeEventListener('keydown', handleEscKey);
+    };
+  }, [selectedProperty]);
+
   const handleReportChange = (assignmentId, value) => {
     setReportText(prev => ({ ...prev, [assignmentId]: value }));
   };
@@ -224,9 +332,40 @@ const StaffDashboard = () => {
                 </div>
               ) : (
                 assignments.map(assignment => (
-                  <div key={assignment._id} className="admin-property-card">
+                  <div key={assignment._id} className="admin-property-card property-enhanced-display">
                     <div className="property-details">
-                      <h4>{assignment.property.title}</h4>
+                      {/* Property Image - Clickable to show details */}
+                      <div 
+                        className="property-image-container" 
+                        onClick={() => handleViewPropertyDetails(assignment.property._id)}
+                        style={{ cursor: 'pointer' }}
+                      >
+                        <img 
+                          src={assignment.property.images && assignment.property.images.length > 0 
+                            ? getImageUrl(assignment.property.images[0])
+                            : "https://via.placeholder.com/400x250/3498db/ffffff?text=No+Image"} 
+                          alt={assignment.property.title} 
+                          className="property-image"
+                          onError={(e) => {
+                            console.log("Image failed to load:", e.target.src);
+                            e.target.onerror = null;
+                            e.target.src = "https://via.placeholder.com/400x250/3498db/ffffff?text=No+Image";
+                          }}
+                        />
+                        <div className="image-overlay">
+                          <i className="fas fa-search-plus"></i>
+                          <span>View Details</span>
+                        </div>
+                        <span className={`assignment-status-badge ${assignment.status}-badge`}>
+                          <i className="fas fa-circle"></i>
+                          {assignment.status}
+                        </span>
+                      </div>
+                      
+                      {/* Property Title */}
+                      <h4 className="property-title">{assignment.property.title}</h4>
+                      
+                      {/* Property Meta Data */}
                       <div className="property-meta">
                         <div className="meta-item">
                           <i className="fas fa-map-marker-alt"></i>
@@ -234,16 +373,28 @@ const StaffDashboard = () => {
                         </div>
                         <div className="meta-item">
                           <i className="fas fa-tag"></i>
-                          <span>{assignment.assignmentType}</span>
+                          <span>{assignment.assignmentType.replace('_', ' ')}</span>
                         </div>
                         <div className="meta-item">
                           <i className="fas fa-calendar"></i>
-                          <span>Due: {assignment.dueDate ? new Date(assignment.dueDate).toLocaleDateString() : 'No due date'}</span>
+                          <span>Next Inspection: {assignment.nextInspectionDate ? new Date(assignment.nextInspectionDate).toLocaleDateString() : 'Not scheduled'}</span>
                         </div>
                       </div>
-                      {assignment.description && (
-                        <p className="assignment-description">{assignment.description}</p>
-                      )}
+                      
+                      {/* Assignment Details */}
+                      <div className="assignment-details">
+                        <h5><i className="fas fa-clipboard-list"></i> Assignment Details</h5>
+                        {assignment.description && (
+                          <p className="assignment-description">{assignment.description}</p>
+                        )}
+                        {assignment.instructions && (
+                          <div className="assignment-instructions">
+                            <strong>Instructions:</strong> {assignment.instructions}
+                          </div>
+                        )}
+                      </div>
+                      
+                      {/* Assignment Status */}
                       <div className="property-status">
                         <span className={`${assignment.status}-badge`}>
                           <i className="fas fa-circle"></i>
@@ -388,6 +539,145 @@ const StaffDashboard = () => {
           </div>
         )}
       </div>
+      
+      {/* Property Details Modal */}
+      {selectedProperty && (
+        <div className="property-details-modal" onClick={(e) => {
+          // Close the modal when clicking outside the content
+          if (e.target.className === 'property-details-modal') {
+            closePropertyDetailsModal();
+          }
+        }}>
+          <div className="modal-content">
+            <div className="modal-header">
+              <h3>
+                <i className="fas fa-building"></i>
+                Property Details
+              </h3>
+              <button className="close-btn" onClick={closePropertyDetailsModal}>
+                <i className="fas fa-times"></i>
+              </button>
+            </div>
+            <div className="modal-body">
+              {propertyDetailsLoading ? (
+                <div className="loading-container">
+                  <div className="loading-spinner"></div>
+                  <p>Loading property details...</p>
+                </div>
+              ) : propertyDetails ? (
+                <div className="property-full-details">
+                  {/* Property Images Carousel */}
+                  <div className="property-images-carousel">
+                    {propertyDetails.images && propertyDetails.images.length > 0 ? (
+                      <>
+                        <img 
+                          src={getImageUrl(propertyDetails.images[0])}
+                          alt={propertyDetails.title} 
+                          className="property-full-image"
+                          onError={(e) => {
+                            console.log("Modal image failed to load:", e.target.src);
+                            e.target.onerror = null;
+                            e.target.src = "https://via.placeholder.com/800x600/3498db/ffffff?text=Image+Not+Available";
+                          }}
+                        />
+                        {/* Thumbnail gallery if multiple images */}
+                        {propertyDetails.images.length > 1 && (
+                          <div className="image-thumbnails">
+                            {propertyDetails.images.map((image, index) => (
+                              <img 
+                                key={index}
+                                src={getImageUrl(image)}
+                                alt={`${propertyDetails.title} - Image ${index + 1}`}
+                                className="image-thumbnail"
+                                onClick={() => {
+                                  // If we wanted to implement image navigation
+                                  console.log("Thumbnail clicked:", index);
+                                }}
+                                onError={(e) => {
+                                  e.target.onerror = null;
+                                  e.target.src = "https://via.placeholder.com/100x100/3498db/ffffff?text=NA";
+                                }}
+                              />
+                            ))}
+                          </div>
+                        )}
+                      </>
+                    ) : (
+                      <div className="no-image-placeholder">
+                        <i className="fas fa-home"></i>
+                        <p>No images available</p>
+                      </div>
+                    )}
+                  </div>
+                  
+                  {/* Property Information */}
+                  <div className="property-info-section">
+                    <h2 className="property-title">{propertyDetails.title}</h2>
+                    <div className="property-price">₹{propertyDetails.pricePerMonth}/month</div>
+                    
+                    <div className="property-address">
+                      <i className="fas fa-map-marker-alt"></i> {propertyDetails.address}
+                    </div>
+                    
+                    <div className="property-features-grid">
+                      <div className="feature">
+                        <i className="fas fa-bed"></i>
+                        <span className="feature-label">Rooms:</span>
+                        <span className="feature-value">{propertyDetails.rooms}</span>
+                      </div>
+                      
+                      <div className="feature">
+                        <i className="fas fa-ruler-combined"></i>
+                        <span className="feature-label">Area:</span>
+                        <span className="feature-value">{propertyDetails.totalAreaSqFt} sq ft</span>
+                      </div>
+                      
+                      <div className="feature">
+                        <i className="fas fa-compass"></i>
+                        <span className="feature-label">Facing:</span>
+                        <span className="feature-value">{propertyDetails.facing}</span>
+                      </div>
+                      
+                      <div className="feature">
+                        <i className="fas fa-building"></i>
+                        <span className="feature-label">Type:</span>
+                        <span className="feature-value">{propertyDetails.propertyType}</span>
+                      </div>
+                    </div>
+                    
+                    <div className="property-description">
+                      <h4>Description</h4>
+                      <p>{propertyDetails.description}</p>
+                    </div>
+                    
+                    {/* Amenities */}
+                    {propertyDetails.amenities && propertyDetails.amenities.length > 0 && (
+                      <div className="property-amenities">
+                        <h4>Amenities</h4>
+                        <div className="amenities-list">
+                          {propertyDetails.amenities.map((amenity, index) => (
+                            <span key={index} className="amenity">
+                              <i className="fas fa-check-circle"></i> {amenity}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ) : (
+                <div className="error-message">
+                  <i className="fas fa-exclamation-triangle"></i>
+                  <p>Failed to load property details</p>
+                </div>
+              )}
+            </div>
+            <div className="modal-footer">
+              <button className="close-modal-btn" onClick={closePropertyDetailsModal}>Close</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

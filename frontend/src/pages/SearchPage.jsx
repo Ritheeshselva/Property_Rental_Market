@@ -24,6 +24,7 @@ const SearchPage = () => {
   useEffect(() => {
     loadFilters();
     performSearch();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const loadFilters = async () => {
@@ -38,16 +39,20 @@ const SearchPage = () => {
   const performSearch = async (page = 1) => {
     setLoading(true);
     try {
+      console.log('Searching with params:', { ...searchParams, page, limit: 12 });
       const searchData = await SearchAPI.searchProperties({
         ...searchParams,
         page,
         limit: 12
       });
       
-      setProperties(searchData.properties);
-      setPagination(searchData.pagination);
+      console.log('Search results:', searchData);
+      setProperties(searchData.properties || []);
+      setPagination(searchData.pagination || {});
     } catch (error) {
       console.error('Error searching properties:', error);
+      setProperties([]);
+      setPagination({});
     } finally {
       setLoading(false);
     }

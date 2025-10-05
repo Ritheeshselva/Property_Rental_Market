@@ -30,6 +30,7 @@ const Login = () => {
         setPhone('');
         setAddress('');
         setRole('user');
+        
         setLoading(false);
       } else {
         const data = await AuthAPI.login(email, password);
@@ -115,6 +116,8 @@ const Login = () => {
                   <option value="staff">Staff Member</option>
                 </select>
               </div>
+
+              {/* staff option allows users to register as staff like other roles */}
 
               <div className="input-group">
                 <label htmlFor="phone">

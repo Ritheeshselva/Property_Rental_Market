@@ -1,0 +1,230 @@
+/* Additional styles for the property booking process */
+
+/* Booking steps indicator */
+.booking-steps {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 2rem;
+}
+
+.step-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: relative;
+  padding: 0 1rem;
+}
+
+.step-item:not(:last-child)::after {
+  content: '';
+  position: absolute;
+  top: 1rem;
+  right: -50%;
+  width: 100%;
+  height: 2px;
+  background-color: #e2e8f0;
+  z-index: 0;
+}
+
+.step-circle {
+  width: 2rem;
+  height: 2rem;
+  border-radius: 50%;
+  background-color: #e2e8f0;
+  color: #718096;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  margin-bottom: 0.5rem;
+  z-index: 1;
+  position: relative;
+}
+
+.step-circle.active {
+  background-color: #3182ce;
+  color: white;
+}
+
+.step-circle.completed {
+  background-color: #38a169;
+  color: white;
+}
+
+.step-circle.completed i {
+  font-size: 0.8rem;
+}
+
+.step-label {
+  font-size: 0.8rem;
+  color: #718096;
+  text-align: center;
+}
+
+.step-label.active {
+  color: #3182ce;
+  font-weight: 600;
+}
+
+.step-label.completed {
+  color: #38a169;
+  font-weight: 600;
+}
+
+/* Payment confirmation styles */
+.payment-confirmation {
+  text-align: center;
+  padding: 2rem;
+  background-color: #f0fff4;
+  border-radius: 8px;
+  border: 1px solid #c6f6d5;
+  margin: 2rem 0;
+}
+
+.payment-confirmation-icon {
+  font-size: 3rem;
+  color: #38a169;
+  margin-bottom: 1rem;
+}
+
+.payment-reference {
+  background-color: #e6fffa;
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  font-family: monospace;
+  font-size: 1.1rem;
+  color: #2c7a7b;
+  display: inline-block;
+}
+
+.booking-details-summary {
+  margin: 2rem 0;
+  padding: 1.5rem;
+  background-color: #f7fafc;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+}
+
+.booking-details-item {
+  display: flex;
+  justify-content: space-between;
+  padding: 0.75rem 0;
+  border-bottom: 1px solid #edf2f7;
+}
+
+.booking-details-item:last-child {
+  border-bottom: none;
+}
+
+.booking-details-label {
+  font-weight: 600;
+  color: #4a5568;
+}
+
+.booking-details-value {
+  color: #2d3748;
+}
+
+/* Form transitions */
+.booking-form-container {
+  position: relative;
+  min-height: 400px;
+}
+
+.booking-form-step {
+  transition: all 0.3s ease;
+  position: absolute;
+  width: 100%;
+  opacity: 0;
+  transform: translateX(20px);
+  pointer-events: none;
+}
+
+.booking-form-step.active {
+  opacity: 1;
+  transform: translateX(0);
+  pointer-events: all;
+}
+
+/* Navigation buttons */
+.step-navigation {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 1.5rem;
+}
+
+.prev-step-btn {
+  background-color: #e2e8f0;
+  color: #4a5568;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 4px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.prev-step-btn:hover {
+  background-color: #cbd5e0;
+}
+
+.next-step-btn {
+  background-color: #3182ce;
+  color: white;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 4px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.next-step-btn:hover {
+  background-color: #2c5282;
+}
+
+/* Modal styles */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modal-content {
+  background-color: white;
+  padding: 2rem;
+  border-radius: 8px;
+  max-width: 600px;
+  width: 90%;
+  max-height: 90vh;
+  overflow-y: auto;
+  position: relative;
+}
+
+.modal-close {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  cursor: pointer;
+  color: #a0aec0;
+}
+
+.modal-close:hover {
+  color: #4a5568;
+}

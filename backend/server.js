@@ -67,6 +67,7 @@ app.use('/api/subscriptions', require('./src/routes/subscriptions'));
 app.use('/api/staff', require('./src/routes/staff'));
 app.use('/api/maintenance', require('./src/routes/maintenance'));
 app.use('/api/search', require('./src/routes/search'));
+app.use('/api/reports', require('./src/routes/reports'));
 
 // Error handler
 // eslint-disable-next-line no-unused-vars

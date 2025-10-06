@@ -1,4 +1,4 @@
-const API_BASE = process.env.REACT_APP_API_BASE || 'http://localhost:5000';
+const API_BASE = process.env.REACT_APP_API_BASE || 'https://property-rental-market-backend.onrender.com';
 
 export async function apiRequest(path, { method = 'GET', headers = {}, body, token, isForm = false } = {}) {
   const finalHeaders = { ...headers };

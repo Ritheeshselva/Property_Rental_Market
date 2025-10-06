@@ -45,7 +45,7 @@
   justify-content: center;
   opacity: 0;
   transition: opacity 0.3s ease;
-  color: white;
+  color: #000; /* Changed from white to black for better visibility */
   font-weight: bold;
 }
 
@@ -78,7 +78,7 @@
   background-color: #3498db;
 }
 
-.property-enhanced-display .in_progress-badge {
+.property-enhanced-display .in_progress_badge {
   background-color: #9b59b6;
 }
 

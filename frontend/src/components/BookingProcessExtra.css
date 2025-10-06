@@ -31,7 +31,7 @@
   height: 2rem;
   border-radius: 50%;
   background-color: #e2e8f0;
-  color: #718096;
+  color: #000; /* Changed from #718096 to black for better visibility */
   display: flex;
   align-items: center;
   justify-content: center;

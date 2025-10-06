@@ -8,7 +8,7 @@
   margin-top: 1.5rem;
   font-size: 1.1rem;
   border-left: 4px solid #3182ce;
-  color: #1a202c;
+  color: #000; /* Changed from #1a202c to black for better visibility */
 }
 
 /* Improve readability of list items */

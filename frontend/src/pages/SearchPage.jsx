@@ -338,7 +338,9 @@ const SearchPage = () => {
                   <div key={property._id} className="property-card">
                     <div className="property-image">
                       <img 
-                        src={property.images?.[0] || '/placeholder-property.jpg'} 
+                        src={property.images?.[0]?.startsWith('http') 
+                          ? property.images[0] 
+                          : `${process.env.REACT_APP_API_BASE}${property.images?.[0] || '/placeholder-property.jpg'}`} 
                         alt={property.title}
                       />
                       {property.hasSubscription && (
